@@ -19,9 +19,33 @@ generated password is in local mode-600 `deploy/.secrets/viewer.json`. Tunnel
 credentials are in `deploy/.secrets/tunnel.json`. Both are gitignored and excluded
 from deployment archives. Only `/healthz` is unauthenticated.
 
-No API credentials or internal reference information were included. This remains
+No internal reference information is included. This remains
 a protected evaluation/development baseline; see `docs/DEVELOTYPE-LAYERS.md` for
 data intake and upstream asset licensing limitations.
+
+## Google 3D and search
+
+Google project `develotype-godseye` supplies Photorealistic 3D Tiles and geocoding.
+The gitignored mode-600 `.env` contains `GOOGLE_MAPS_API_KEY`, restricted to Map
+Tiles and the hosted/local website referrers. Vite embeds this browser key during
+build; it is intentionally visible to authenticated users and restricted at Google.
+
+`GOOGLE_GEOCODING_API_KEY` is a separate server-only key restricted to Geocoding
+and the container's public outbound IPv4. Deployment writes only this key into
+root-owned mode-600 `/etc/godseye.env`; systemd loads it into the app. If the site's
+outbound public IP changes, update this key's restriction. The browser routes
+forward/reverse Google geocoding through authenticated `/api/google/geocode`.
+This avoids Google's rejection of referrer-restricted keys for geocoding.
+
+Initial quotas: 20 Google 3D root requests/day and 100 legacy geocoding
+requests/day. Unused 2D/Street View tile and geocoding-v4 daily quotas are zero.
+A $10 monthly project budget alerts billing account recipients at 50%, 90%, and
+100%; this is an alert, not a spending cap. Optional Places, Street View, Cesium
+ion, and OpenAI integrations are not configured.
+
+Run `VERIFY_GOOGLE_3D=1 node deploy/verify.mjs` to check live geocoding, successful
+Google tile responses, completed tile rendering, and authentication. Credentials
+and request query strings are excluded from its diagnostic output.
 
 ## Build, deploy, verify
 

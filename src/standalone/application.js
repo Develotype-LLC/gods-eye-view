@@ -1,5 +1,6 @@
 import { createStandaloneCatalog } from './catalog.js';
 import { createStandalonePlaceSearch } from './placeSearch.js';
+import { createGeocodingTransport } from './geocodingTransport.js';
 import { CITY_POIS } from '../locations.js';
 import { createApplication } from '../app/application.js';
 import { createStandaloneScene } from './scene.js';
@@ -33,6 +34,7 @@ export function createStandaloneApplication({
         // so it stays free of application state.
         presets: CITY_POIS,
         ...geospatial,
+        fetchImpl: createGeocodingTransport(geospatial.fetchImpl),
         resolveApiKey: () => googleApiKey,
         signal: context.signal,
       });

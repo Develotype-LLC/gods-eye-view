@@ -8,6 +8,7 @@ from pathlib import Path
 import secrets
 import subprocess
 import tarfile
+import re
 
 BASE = Path(__file__).resolve().parent
 ROOT = BASE.parent
@@ -56,6 +57,12 @@ put('/etc/cloudflared/godseye.json', (private / 'tunnel.json').read_bytes(), '06
 put('/etc/cloudflared/config.yml', (BASE / 'cloudflared.yml').read_bytes(), '0640', 'root:cloudflared')
 for name in ['godseye', 'cloudflared-godseye']:
     put(f'/etc/systemd/system/{name}.service', (BASE / f'{name}.service').read_bytes())
+env_path = ROOT / '.env'
+if env_path.exists():
+    selected = [line for line in env_path.read_text().splitlines() if line.startswith('GOOGLE_GEOCODING_API_KEY=')]
+    if selected:
+        assert len(selected) == 1 and re.fullmatch(r'GOOGLE_GEOCODING_API_KEY=[A-Za-z0-9_-]+', selected[0])
+        put('/etc/godseye.env', (selected[0] + '\n').encode(), '0600')
 remote('pct exec 110 -- nginx -t')
 remote('pct exec 110 -- cloudflared tunnel --config /etc/cloudflared/config.yml ingress validate')
 previous = remote('pct exec 110 -- readlink /srv/godseye/current || true').decode().strip()

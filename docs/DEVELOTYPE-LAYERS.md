@@ -48,7 +48,8 @@ assets for evaluation and is not a cleared commercial data product. Remove or
 license those datasets before commercial use. Preserve other source attributions.
 See `LICENSE` and `DATA_SOURCES.md` for the source-specific notices.
 
-The baseline runs keyless. Photorealistic 3D and optional paid feeds need separately
-configured provider credentials and suitable provider terms. Hosted preview mode
+The deployed baseline uses Google Photorealistic 3D and a separate server-only
+geocoding key. Optional paid feeds need separately configured provider credentials
+and suitable provider terms. Hosted preview mode
 does not expose the upstream local-only credential-writing setup route. Add keys
 through a reviewed server configuration when needed; never commit them.
