@@ -22,6 +22,7 @@ import { createInfrastructureLayers } from '../data/infrastructure.js';
 import { localGeoJsonServices } from './localGeojsonServices.js';
 import { createBhoteKoshiEventLayer } from '../data/bhoteKoshiEvent.js';
 import { createBhoteKoshiLocatorLayer } from '../data/bhoteKoshiLocator.js';
+import { createGroundMotionLayer } from '../reference/groundMotion.js';
 
 const SOURCE_METHODS = Object.freeze({
   flights: ['getSnapshot'],
@@ -104,6 +105,7 @@ export function createApplicationCatalog({
     });
     const catalog = createLayerCatalog(
       [
+        createGroundMotionLayer(),
         createBhoteKoshiEventLayer(),
         createBhoteKoshiLocatorLayer({
           boundaryResolver: nepalBoundaryResolver,

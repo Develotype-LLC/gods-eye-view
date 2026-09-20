@@ -1,3 +1,4 @@
+import { groundMotionProxy } from './ground-motion.js';
 import { openSkyProxy } from './aircraft/opensky.js';
 import { celestrakProxy, rocketLaunchesProxy } from './space.js';
 import { tomtomProxy } from './traffic.js';
@@ -47,6 +48,7 @@ function localProviderPlugins() {
     openAiRealtimeProxy(),
     googlePlacesContextProxy(),
     googleGeocodingProxy(),
+    groundMotionProxy(),
     keySetupEndpoint(),
   ];
 }

@@ -1,0 +1,20 @@
+#open-reference-library { color:#78ded0; border:1px solid #367369; background:#12332e; padding:4px 8px; font:10px monospace; cursor:pointer; }
+#reference-library { margin:auto; width:min(1020px,94vw); max-height:88vh; padding:26px; border:1px solid #375452; border-radius:14px; color:#e4eeec; background:#101c21; box-shadow:0 25px 100px #0009; font:14px/1.55 system-ui,sans-serif; }
+#reference-library::backdrop { background:#030c15b8; backdrop-filter:blur(5px); }
+#reference-library header,#ground-motion-legend header { display:flex; justify-content:space-between; align-items:center; gap:16px; }
+#reference-library h2 {font-size:27px; margin:3px 0;} #reference-library small {color:#8ca7a7;} #reference-library .ref-intro {color:#b2c6c6; margin:10px 0 22px;}
+#reference-library button,#ground-motion-legend button {cursor:pointer; color:inherit; background:#20363d; border:1px solid #3a545a; border-radius:6px; padding:9px 12px; font:inherit;}
+#reference-library button:hover,#ground-motion-legend button:hover {background:#2c4850;} #reference-library button:disabled {opacity:.55;cursor:wait;}
+.ref-workspace {display:grid;grid-template-columns:310px 1fr;gap:25px; min-height:420px;}
+.ref-workspace aside {border-right:1px solid #2b4249;padding-right:20px;} .ref-workspace label {display:block;font-size:12px;color:#a7bcbc;}
+.ref-workspace input {box-sizing:border-box; width:100%;padding:11px;margin:7px 0 12px;border:1px solid #486169;border-radius:6px;background:#0a161b;color:#ecf6f4;font:inherit;}
+.ref-workspace nav {max-height:49vh;overflow:auto;} #reference-library nav button {display:block;text-align:left;width:100%;margin-bottom:7px;background:transparent;border-color:transparent;}
+#reference-library nav button strong,#reference-library nav button small {display:block;} #reference-library nav button.selected {background:#1b383c;border-color:#4f9c93;}
+.ref-detail {overflow:auto;max-height:61vh;padding-right:10px;} .ref-detail h3 {font-size:23px;margin:12px 0;} .ref-detail p {margin:12px 0;}
+.ref-detail dl {display:grid;grid-template-columns:90px 1fr;gap:9px;margin:20px 0;} .ref-detail dt {color:#8ba7a9;} .ref-detail dd {margin:0;} .ref-detail a {color:#83d8cc;}
+.ref-badge {display:inline-block;padding:3px 10px;border-radius:20px;background:#344047;color:#bccdd1;font-size:12px;} .ref-badge.available {background:#1b5145;color:#a3f2d8;}
+#reference-library .ref-primary {background:#79d9c4;color:#08251e;font-weight:650;margin-top:8px;} .ref-note {font-size:12px;color:#9bb4b7;} .ref-detail details {margin-top:20px;border-top:1px solid #345056;padding-top:14px;} .ref-detail summary {cursor:pointer;} .ref-detail li {margin-bottom:7px;}
+#ground-motion-legend {position:fixed;right:18px;bottom:110px;width:275px;z-index:180;background:#101c21f2;color:#e4eeec;border:1px solid #456561;border-radius:10px;padding:16px;font:12px/1.45 system-ui,sans-serif;box-shadow:0 8px 30px #0006;}
+#ground-motion-legend[hidden] {display:none;} #ground-motion-legend small {display:block;color:#a5c1c1;} #ground-motion-legend label {display:block;margin-top:12px;} #ground-motion-legend select {display:block;width:100%;background:#22383e;color:#e4eeec;padding:6px;margin-top:4px;border:1px solid #56706e;} #ground-motion-legend input {width:100%;accent-color:#83d8cc;} #ground-motion-legend [data-sample] {min-height:35px;}
+.ref-colorbar {height:12px;margin-top:16px;background:linear-gradient(90deg,#053061,#4393c3,#d1e5f0,#f7f7f7,#fddbc7,#d6604d,#67001f);border-radius:3px;} .ref-scale {display:flex;justify-content:space-between;margin:4px 0;}
+@media(max-width:700px){#reference-library{padding:16px;}.ref-workspace{grid-template-columns:1fr;gap:14px;}.ref-workspace aside{border-right:0;padding:0;}.ref-workspace nav{max-height:150px;}.ref-detail{max-height:43vh;}#ground-motion-legend{right:10px;bottom:90px;width:230px;}}
