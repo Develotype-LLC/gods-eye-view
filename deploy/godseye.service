@@ -1,0 +1,28 @@
+[Unit]
+Description=Develotype Gods Eye authenticated preview
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=godseye
+Group=godseye
+WorkingDirectory=/srv/godseye/current
+Environment=NODE_ENV=production
+Environment=HOST=127.0.0.1
+Environment=PORT=4173
+Environment=PATH=/usr/local/bin:/usr/bin:/bin
+ExecStart=/usr/local/bin/node node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 4173 --strictPort
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/godseye/current/.gev-cache /srv/godseye/current/.gev-logs /srv/godseye/current/node_modules/.vite-temp
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+CapabilityBoundingSet=
+UMask=0027
+
+[Install]
+WantedBy=multi-user.target

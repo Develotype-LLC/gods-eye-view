@@ -12,3 +12,7 @@ output/
 3d-models/
 pinokio/ENVIRONMENT
 pinokio/.installed
+deploy/.secrets/
+deploy/__pycache__/
+deploy/last-release.json
+deploy/verification.json
