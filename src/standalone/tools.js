@@ -13,6 +13,7 @@ export function createStandaloneTools(options) {
   } catch {}
   const landman = initialLandmanMode({
     search: location.search,
+    hostname: location.hostname,
     hasShareState: options.controls.styleManager.hasShareState,
     preference,
   });

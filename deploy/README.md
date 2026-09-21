@@ -2,7 +2,8 @@
 
 - Fork: https://github.com/Develotype-LLC/gods-eye-view
 - Upstream: https://github.com/bilawalsidhu/gods-eye-view
-- Intended URL: https://godseye.develotype.com
+- Landman login: https://landman.develotype.com (defaults to the Landman workspace).
+- Original URL: https://godseye.develotype.com
 - Proxmox: established SSH destination in `GODSEYE_PROXMOX_HOST`, container **110**, `godseye`.
 - Ubuntu 24.04, unprivileged LXC, 2 CPU cores, 4 GiB RAM, 512 MiB swap,
   32 GiB ZFS disk, DHCP on `vmbr0`. IDs 108 and 109 were already occupied.
@@ -15,7 +16,7 @@
 
 HTTP Basic authentication protects the application, assets, and API routes over
 HTTPS. This is not Cloudflare Access or per-user SSO. Username is `brian`; the
-generated password is in local mode-600 `deploy/.secrets/viewer.json`. Tunnel
+generated password is in local mode-600 `deploy/.secrets/viewer.json`. Dia uses username `dia`, with a separate generated password in mode-600 `deploy/.secrets/viewers/dia.json` and the local handoff file `deploy/.secrets/dia-login.txt`. Deployment upserts these users without truncating the password file. Both accounts access the same application and datasets; this is not per-user data isolation. Tunnel
 credentials are in `deploy/.secrets/tunnel.json`. Both are gitignored and excluded
 from deployment archives. Only `/healthz` is unauthenticated.
 
@@ -86,3 +87,5 @@ was added; the baseline is reconstructible from the fork and private tunnel file
 Develotype fork and `upstream` at Bilawal Sidhu's repository. Work on feature
 branches and retain upstream attribution. Private data and secrets do not belong
 in this public fork.
+
+The Landman hostname defaults to the Landman workspace even with a saved console preference or a shared-map hash. An explicit `?view=console` still allows switching to Full console. Both hostnames route through the existing tunnel and nginx authentication. Google Maps browser-key referrers include both HTTPS hostnames.

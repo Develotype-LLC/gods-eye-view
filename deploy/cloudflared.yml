@@ -2,6 +2,8 @@ tunnel: 0a4de8d0-3a0e-4e2a-8eec-d63c76c70a88
 credentials-file: /etc/cloudflared/godseye.json
 metrics: 127.0.0.1:20241
 ingress:
+  - hostname: landman.develotype.com
+    service: http://127.0.0.1:8080
   - hostname: godseye.develotype.com
     service: http://127.0.0.1:8080
   - service: http_status:404

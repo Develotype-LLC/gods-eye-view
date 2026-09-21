@@ -1,12 +1,15 @@
 export const LANDMAN_MODE_KEY = 'landman:workspace:v1';
 export function initialLandmanMode({
   search = '',
+  hostname = '',
   hasShareState = false,
   preference = null,
 } = {}) {
   const requested = new URLSearchParams(search).get('view');
   if (requested === 'landman') return true;
-  if (requested === 'console' || hasShareState) return false;
+  if (requested === 'console') return false;
+  if (hostname === 'landman.develotype.com') return true;
+  if (hasShareState) return false;
   return preference !== 'console';
 }
 export const LANDMAN_LAYERS = [

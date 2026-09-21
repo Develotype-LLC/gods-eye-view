@@ -43,6 +43,7 @@ export function mountLandmanWorkspace({
   } catch {}
   const initial = initialLandmanMode({
     search: location.search,
+    hostname: location.hostname,
     hasShareState: styleManager.hasShareState,
     preference,
   });

@@ -44,3 +44,8 @@ test('Layer search combines source matching with active-only filtering', () => {
   );
   assert.equal(filterLandmanLayers('mineral ownership').length, 0);
 });
+test('Landman hostname opens the workspace even with saved console preferences or a shared map', () => {
+  assert.equal(initialLandmanMode({hostname:'landman.develotype.com',hasShareState:true,preference:'console'}),true);
+  assert.equal(initialLandmanMode({hostname:'landman.develotype.com',search:'?view=console'}),false);
+  assert.equal(initialLandmanMode({hostname:'godseye.develotype.com',hasShareState:true}),false);
+});

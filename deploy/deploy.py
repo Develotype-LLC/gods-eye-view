@@ -38,6 +38,12 @@ if not viewer.exists():
         json.dump({'url': 'https://godseye.develotype.com', 'username': 'brian',
                    'password': secrets.token_urlsafe(30)}, f)
 account = json.loads(viewer.read_text())
+accounts = [account] + [json.loads(p.read_text()) for p in sorted((private / 'viewers').glob('*.json'))]
+assert len({a['username'] for a in accounts}) == len(accounts), 'Duplicate viewer account'
+for a in accounts:
+    assert re.fullmatch(r'[a-z][a-z0-9_-]{0,31}', a['username']), 'Invalid viewer username'
+    assert isinstance(a['password'], str) and len(a['password']) >= 16 and not any(c in a['password'] for c in '\r\n'), 'Invalid viewer password'
+
 stamp = datetime.datetime.now(datetime.timezone.utc).strftime('%Y%m%dT%H%M%SZ')
 target = f'/srv/godseye/releases/{stamp}'
 archive = io.BytesIO()
@@ -48,7 +54,10 @@ with tarfile.open(fileobj=archive, mode='w:gz') as tar:
 remote(f'pct exec 110 -- mkdir -p {target}')
 remote(f'pct exec 110 -- tar -xzf - --no-same-owner -C {target}', archive.getvalue())
 remote(f"pct exec 110 -- bash -lc 'export PATH=/usr/local/bin:/usr/bin:/bin; cd {target} && PUPPETEER_SKIP_DOWNLOAD=true npm ci --no-audit --no-fund > /tmp/godseye-npm.log 2>&1 && mkdir -p .gev-cache .gev-logs node_modules/.vite-temp && chown godseye:godseye .gev-cache .gev-logs node_modules/.vite-temp'")
-remote('pct exec 110 -- htpasswd -iBc /etc/nginx/godseye-viewers.htpasswd brian', (account['password'] + '\n').encode())
+# Initialize only when absent; never truncate existing users during deployment.
+remote("pct exec 110 -- sh -c 'umask 077; test -f /etc/nginx/godseye-viewers.htpasswd || touch /etc/nginx/godseye-viewers.htpasswd'")
+for a in accounts:
+    remote(f"pct exec 110 -- htpasswd -iB /etc/nginx/godseye-viewers.htpasswd {a['username']}", (a['password'] + '\n').encode())
 remote('pct exec 110 -- chown root:www-data /etc/nginx/godseye-viewers.htpasswd')
 remote('pct exec 110 -- chmod 0640 /etc/nginx/godseye-viewers.htpasswd')
 put('/etc/nginx/sites-available/godseye', (BASE / 'nginx.conf').read_bytes())
