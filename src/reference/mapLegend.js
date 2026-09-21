@@ -1,3 +1,5 @@
+import { themeLegend } from './landThemes.js';
+import { DENSITY_SCALE } from './densityModel.js';
 import { LANDMAN_LAYERS } from './landmanModel.js';
 import { REFERENCE_COLORS } from './records.js';
 import { assetSymbol, ET_COLORS } from './mapSymbols.js';
@@ -35,6 +37,8 @@ export function mountMapLegend({ root, catalog, enabled, inspect }) {
         item.id,
         result?.mode,
         result?.count,
+        result?.cellKm,
+        state.theme,
         filters,
         state.error,
         state.loading,
@@ -80,6 +84,18 @@ export function mountMapLegend({ root, catalog, enabled, inspect }) {
         description =
           'Individual well locations · includes source classifications, not verified activity';
       }
+      if (result?.mode === 'density') {
+        icon.hidden = true;
+        description = `${result.cellKm} km × ${result.cellKm} km fixed equal-area cells · RRC locations/km². Full edge cells extend beyond view; not active production.`;
+        for (const step of DENSITY_SCALE) {
+          const label = node('small', '■ ' + step.label + ' locations/km²');
+          label.style.color = step.color;
+          row.append(label);
+        }
+        const controls = node('button', 'Change density display / cell size');
+        controls.addEventListener('click', () => inspect(item));
+        row.append(controls);
+      }
       if (item.id === 'us-basins') {
         icon.hidden = true;
         description =
@@ -88,7 +104,29 @@ export function mountMapLegend({ root, catalog, enabled, inspect }) {
       if (item.id === 'land-parcels') {
         icon.hidden = true;
         description =
-          'Parcel boundaries / count clusters · county appraisal snapshots; not verified mineral rights';
+          result?.mode === 'clusters'
+            ? 'Parcel-count clusters. Zoom in for owner themes; count is not owner identity.'
+            : 'Appraisal parcels · ' +
+              ({
+                neutral: 'boundaries',
+                class: 'owner class',
+                research: 'research status',
+              }[state.theme] || 'boundaries') +
+              ' · not verified mineral rights';
+        if (result?.mode === 'parcels') {
+          for (const [label, color] of themeLegend(state.theme)) {
+            const key = node('small', '■ ' + label);
+            key.style.color = color;
+            row.append(key);
+          }
+          if (state.theme !== 'neutral')
+            row.append(
+              node(
+                'small',
+                'Dashed: missing name or candidate class. Unknown parcels are separate research items.',
+              ),
+            );
+        }
       }
       if (item.id === 'openet') {
         icon.hidden = true;
@@ -172,8 +210,8 @@ export function mountMapLegend({ root, catalog, enabled, inspect }) {
       body.append(row);
     }
   }
-  const off = ['ground-motion', 'terrain-difference'].map((id) =>
-    catalog.get(id).subscribe(render),
+  const off = ['ground-motion', 'terrain-difference', 'land-parcels'].map(
+    (id) => catalog.get(id).subscribe(render),
   );
   render();
   return {

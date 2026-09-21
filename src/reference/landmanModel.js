@@ -168,6 +168,15 @@ export const LANDMAN_VIEWS = [
     inspector: null,
   },
   {
+    id: 'land',
+    name: 'Land & owners',
+    description:
+      'Appraisal parcels, owner classes and research status · Permian / Palo Duro',
+    layers: ['land-parcels'],
+    bounds: [-106.7, 29, -99, 36.7],
+    inspector: 'land-parcels',
+  },
+  {
     id: 'water',
     name: 'Water',
     description: 'Disposal, ponds and water facilities',

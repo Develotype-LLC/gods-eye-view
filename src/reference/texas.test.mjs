@@ -7,8 +7,8 @@ test('viewport bounds reject malformed, wrapping and nonfinite inputs',()=>{
  for(const input of ['', 'a,25,-93,37','-107,25,-93,91','-93,25,-107,37','-107,37,-93,25'])assert.throws(()=>parseTexasBox(input));
 });
 test('large viewport returns aggregated cells and binds filter text as a SQL parameter',async()=>{
- const calls=[];const request=fixture(async(sql,args)=>{calls.push({sql,args});return {rows:sql.includes('count(*)::int AS count FROM')?[{count:1000000}]:[{count:1000000,longitude:-100,latitude:31}]};});
- const response=await request('/viewport?bbox=-107,25,-93,37&category=Oil%27');assert.equal(response.status,200);assert.equal(response.body.mode,'clusters');assert.equal(response.body.features.length,1);assert.equal(calls[0].args[4],"Oil'");assert.ok(!calls[0].sql.includes("Oil'"));
+ const calls=[];const request=fixture(async(sql,args)=>{calls.push({sql,args});return {rows:sql.includes('AS version')?[{version:'1'}]:sql.includes('count(*)::int AS count FROM')?[{count:1000000}]:[{count:1000000,west:-101,east:-100,south:30,north:31}]};});
+ const response=await request('/viewport?bbox=-107,25,-93,37&category=Oil%27');assert.equal(response.status,200);assert.equal(response.body.mode,'density');assert.equal(response.body.features.length,1);assert.equal(calls[0].args[4],"Oil'");assert.ok(!calls[0].sql.includes("Oil'"));
 });
 test('small viewport returns bounded points and invalid lookups never reach the database',async()=>{
  const calls=[];const request=fixture(async(sql,args)=>{calls.push(sql);return{rows:sql.includes('count(*)')?[{count:1}]:[{id:'1',api8:'10300256'}]};});

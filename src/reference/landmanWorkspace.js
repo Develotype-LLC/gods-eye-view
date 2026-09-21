@@ -59,7 +59,7 @@ export function mountLandmanWorkspace({
   root.id = 'landman-workspace';
   root.setAttribute('aria-label', 'Landman workspace');
   root.hidden = true;
-  root.innerHTML = `<header class="lm-topbar"><div class="lm-brand"><img src="/logo.svg" alt=""><div><strong>LANDMAN’S <em>Eye</em></strong><span>WELLS · WATER · LAND</span></div></div><nav aria-label="Workspace view"><button data-mode="landman" aria-pressed="true">Landman</button><button data-mode="console" aria-pressed="false">Full console ↗</button></nav><div class="lm-top-actions"><button data-region="texas">Texas</button><button data-region="permian">Permian</button><button data-region="us">US basins</button><button data-tilt>2D / 3D tilt</button><button data-mobile-layers aria-expanded="true">Layers</button></div></header>
+  root.innerHTML = `<header class="lm-topbar"><div class="lm-brand"><img src="/logo.svg" alt=""><div><strong>LANDMAN’S <em>Eye</em></strong><span>WELLS · WATER · LAND</span></div></div><nav aria-label="Workspace view"><button data-mode="landman" aria-pressed="true">Landman</button><button data-mode="console" aria-pressed="false">Full console ↗</button></nav><div class="lm-top-actions"><button data-region="texas">Texas</button><button data-region="permian">Permian</button><button data-region="palo-duro">Palo Duro</button><button data-region="us">US basins</button><button data-tilt>2D / 3D tilt</button><button data-mobile-layers aria-expanded="true">Layers</button></div></header>
  <aside class="lm-sidebar" aria-label="Landman layers"><div class="lm-sidebar-heading"><div><small>YOUR WORKSPACE</small><h2>Explore the basin</h2></div><span data-active-count>0 on</span></div>
  <div class="lm-view-picks" aria-label="Landman task views"></div><p class="lm-view-description" data-view-description>Views replace visible layers and zoom to their coverage.</p>
  <button class="lm-compare-button" data-pipeline>LONG-Haul · pipeline routing</button>
@@ -398,6 +398,7 @@ export function mountLandmanWorkspace({
   for (const [id, bounds] of Object.entries({
     texas: [-106.7, 25.7, -93.4, 36.6],
     permian: [-105, 30, -100.5, 34],
+    'palo-duro': [-104, 33.5, -99, 36.7],
     us: [-125, 24, -66, 50],
   }))
     on('[data-region="' + id + '"]', 'click', () => fly(bounds));
@@ -510,7 +511,8 @@ export function mountLandmanWorkspace({
     });
   const offTexas = catalog.get('texas-wells').subscribe(() => {
     legend?.render();
-    const detail = catalog.get('texas-wells').getState().detail;
+    const texasState = catalog.get('texas-wells').getState();
+    const detail = texasState.bin || texasState.detail;
     if (landman && detail && detail !== previousTexas)
       setInspector(LANDMAN_LAYERS[0]);
     previousTexas = detail;

@@ -70,6 +70,26 @@ export function mountOwnerWorkspace({ viewer, openInspector }) {
   panel.id = 'owner-workspace-panel';
   panel.setAttribute('aria-label', 'Owner relationship workspace');
   panel.innerHTML = `<p>Private relationship records · shared only with this project’s members. Appraisal names remain unverified identity groups.</p><label>Relationship project<select data-project></select></label><details><summary>Create a separate private project</summary><form data-new-project><label>Project or client name<input data-project-name maxlength="120" required></label><p>Only your login will have access. Sharing additional projects requires a membership change.</p><button>Create private project</button></form></details><div class="ow-actions"><button data-directory>Saved owners and research</button><button data-back>Back to route or land</button></div><form data-search><label>Find recorded owners<input data-query minlength="2" maxlength="100" placeholder="Owner name"></label><button>Search owners</button><button type="button" data-new>Add owner we already know</button></form><div data-matches></div><p data-message role="status" aria-live="polite"></p><div data-profile hidden><h3 data-title></h3><p data-identity></p><div class="ow-actions"><button data-highlight>Highlight listed parcels</button><button data-clear-highlight>Clear highlight</button><button data-all>Show other mapped parcels</button></div><p data-parcel-count></p><div data-parcels></div><form data-edit>${fields.map(([key, label, max]) => `<label>${label}${options[key] ? `<select data-field="${key}">${options[key].map(([value, text]) => `<option value="${value}">${text}</option>`).join('')}</select>` : ['notes', 'basis', 'scope', 'contact', 'nextAction'].includes(key) ? `<textarea data-field="${key}" maxlength="${max}" rows="3"></textarea>` : `<input data-field="${key}" type="${key.endsWith('On') ? 'date' : 'text'}" ${max ? `maxlength="${max}"` : ''} ${key === 'name' ? 'required' : ''}>`}</label>`).join('')}<p>Willingness is a dated team assessment for the selected transaction and scope, not a probability or permission. Save each transaction before switching. Follow-up dates are a worklist, not automatic reminders.</p><button data-save>Save owner record</button><button type="button" data-reload>Discard edits / reload saved record</button></form><p data-saved></p><p data-assessment-author></p><details><summary>Assessment and edit history</summary><div data-history></div></details></div>`;
+  const worklist = node('form');
+  worklist.dataset.worklist = '';
+  worklist.hidden = true;
+  worklist.innerHTML = `<h3>Owner research & follow-up</h3><label>Owner / research name<input data-worklist-query maxlength="100"></label><label>Relationship<select data-worklist-relationship><option value="">All relationships</option>${options.relationship.map(([v, label]) => `<option value="${v}">${label}</option>`).join('')}</select></label><label>Follow-up<select data-worklist-due><option value="">All dates</option><option value="due">Due or overdue</option><option value="undated">No follow-up date</option></select></label><label>Team contact contains<input data-worklist-sponsor maxlength="120"></label><button>Filter saved records</button><p>Private to the selected project. Ordered by follow-up date; up to 200 matching records.</p>`;
+  panel.querySelector('[data-matches]').before(worklist);
+  worklist.addEventListener('submit', (e) => {
+    e.preventDefault();
+    void directory();
+  });
+  const editDisclosure = node('details');
+  editDisclosure.dataset.editDisclosure = '';
+  editDisclosure.append(
+    node('summary', 'Edit relationship and proposal assessment'),
+  );
+  const editor = panel.querySelector('[data-edit]');
+  editor.before(editDisclosure);
+  editDisclosure.append(editor);
+  const overview = node('div');
+  overview.dataset.profileSummary = '';
+  editDisclosure.before(overview);
   document.body.append(panel);
   const abort = new AbortController(),
     highlight = new Cesium.CustomDataSource('Owner profile parcel highlights');
@@ -144,7 +164,9 @@ export function mountOwnerWorkspace({ viewer, openInspector }) {
     );
     project = String(d.projects[0]?.id || '');
     if (!project)
-      throw Error('No relationship project is assigned to your login.');
+      throw Error(
+        'No private relationship project is assigned to your login. Public appraisal parcels remain available in Land & owners; project membership must be set up separately.',
+      );
   }
   function draw(list) {
     highlight.entities.removeAll();
@@ -189,6 +211,7 @@ export function mountOwnerWorkspace({ viewer, openInspector }) {
       get(`[data-field="${k}"]`).value = data[k] ?? defaults[k];
   }
   function render(d) {
+    worklist.hidden = true;
     profile = d.profile;
     parcels = d.parcels;
     dirty = false;
@@ -199,6 +222,23 @@ export function mountOwnerWorkspace({ viewer, openInspector }) {
       name: profile?.data.name || d.sourceName || context.name || '',
     };
     fill(values);
+    const human = (key, value) =>
+      options[key]?.find(([id]) => id === value)?.[1] || value;
+    overview.replaceChildren(
+      node(
+        'p',
+        `${human('relationship', values.relationship)} · ${values.sponsor || 'No team contact assigned'}`,
+      ),
+      node(
+        'p',
+        `${human('transaction', values.transaction)}: ${human('willingness', values.willingness)} · ${values.confidence} confidence · ${values.assessedOn || 'Undated'}`,
+      ),
+      node(
+        'p',
+        `Next action: ${values.nextAction || 'Not recorded'} · Follow-up: ${values.followupOn || 'Not scheduled'}`,
+      ),
+    );
+    editDisclosure.open = !profile;
     assessmentAuthor(values.transaction);
     get('[data-title]').textContent = values.name || 'New owner';
     get('[data-identity]').textContent = context.subject.startsWith('parcel:')
@@ -303,24 +343,40 @@ export function mountOwnerWorkspace({ viewer, openInspector }) {
     try {
       await initialize();
       get('[data-profile]').hidden = true;
+      worklist.hidden = false;
       highlight.entities.removeAll();
       const d = await api(
-        'owner-directory?' + new URLSearchParams({ project }),
+        'owner-directory?' +
+          new URLSearchParams({
+            project,
+            q: get('[data-worklist-query]').value,
+            relationship: get('[data-worklist-relationship]').value,
+            due: get('[data-worklist-due]').value,
+            sponsor: get('[data-worklist-sponsor]').value,
+          }),
       );
       const list = get('[data-matches]');
       list.replaceChildren();
       for (const p of d.profiles.slice(0, 200)) {
         const b = node(
           'button',
-          `${p.name} · ${p.relationship} · ${p.transaction}: ${p.willingness}${p.followup ? ' · follow-up ' + p.followup : ''}`,
+          `${p.name} · ${options.relationship.find(([id]) => id === p.relationship)?.[1] || 'Not assessed'}${p.followup ? ' · follow-up ' + p.followup : ' · no follow-up date'}`,
         );
         b.type = 'button';
         b.addEventListener('click', () => void load({ subject: p.subject }));
-        list.append(b);
+        const row = node('div');
+        row.append(
+          b,
+          node(
+            'p',
+            `${p.sponsor || 'No team contact'} · ${p.next_action || 'No next action recorded'}`,
+          ),
+        );
+        list.append(row);
       }
       message(
         d.profiles.length > 200
-          ? 'Showing 200 most recently updated records.'
+          ? 'Showing the first 200 matching records by follow-up date. Narrow the filters for more.'
           : `${d.profiles.length} saved records. Search recorded owners or add an owner you already know.`,
       );
     } catch (e) {

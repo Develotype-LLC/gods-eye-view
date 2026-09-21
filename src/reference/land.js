@@ -1,4 +1,5 @@
 import * as Cesium from 'cesium';
+import { parcelTheme, themeLegend } from './landThemes.js';
 const ROLE_NAMES = {
   upstream: 'Upstream',
   midstream: 'Midstream',
@@ -19,6 +20,7 @@ const node = (tag, text) => {
 export function createLandLayer() {
   let viewer,
     enabled = false,
+    theme = 'neutral',
     disposed = false,
     panel,
     source,
@@ -144,6 +146,8 @@ export function createLandLayer() {
         }
       else
         for (const f of data.features) {
+          const style = parcelTheme(f, theme);
+          const color = Cesium.Color.fromCssColorString(style.color);
           const polygons =
             f.geometry.type === 'Polygon'
               ? [f.geometry.coordinates]
@@ -162,7 +166,7 @@ export function createLandLayer() {
                   Cesium.Cartesian3.fromDegreesArray(rings[0].flat()),
                   rings.slice(1).map(ring),
                 ),
-                material: color.withAlpha(0.06),
+                material: color.withAlpha(style.alpha),
                 classificationType: Cesium.ClassificationType.BOTH,
               },
             });
@@ -174,13 +178,19 @@ export function createLandLayer() {
                 polyline: {
                   positions: Cesium.Cartesian3.fromDegreesArray(r.flat()),
                   width: 1.5,
-                  material: color,
+                  material: style.dashed
+                    ? new Cesium.PolylineDashMaterialProperty({
+                        color,
+                        dashLength: 12,
+                      })
+                    : color,
                   clampToGround: true,
                 },
               });
             }
           }
         }
+      renderThemeLegend();
       panel.querySelector('[data-totals]').textContent =
         `${data.summary.total.toLocaleString()} matching parcels · ${Math.round(data.summary.acres).toLocaleString()} geometric acres. ${data.count.toLocaleString()} in this view.`;
       const list = panel.querySelector('[data-results]');
@@ -196,10 +206,12 @@ export function createLandLayer() {
         for (const f of data.features.slice(0, 50)) {
           const b = node(
             'button',
-            `${f.owner.length > 100 ? f.owner.slice(0, 97) + '…' : f.owner} · ${Number(f.area_acres).toFixed(1)} ac · ${f.county}`,
+            `${!f.owner ? 'Owner not supplied · parcel ' + f.id : f.owner.length > 100 ? f.owner.slice(0, 97) + '…' : f.owner} · ${Number(f.area_acres).toFixed(1)} ac · ${f.county}`,
           );
           b.type = 'button';
-          b.title = f.owner;
+          b.title = f.owner || 'Owner not supplied';
+          if (theme !== 'neutral')
+            b.append(node('small', parcelTheme(f, theme).label));
           b.addEventListener('click', () => void inspect(f.id));
           list.append(b);
         }
@@ -489,13 +501,38 @@ export function createLandLayer() {
       if (intent === detailSequence) box.replaceChildren(node('p', e.message));
     }
   }
+  function renderThemeLegend() {
+    const box = panel.querySelector('[data-theme-legend]');
+    box.replaceChildren();
+    if (result?.mode === 'clusters') {
+      box.append(
+        node(
+          'p',
+          'Zoom in for parcel colors. Regional circles show parcel counts, not owner identity or class.',
+        ),
+      );
+      return;
+    }
+    for (const [label, color] of themeLegend(theme)) {
+      const key = node('span', '■ ' + label);
+      key.style.color = color;
+      box.append(key);
+    }
+    if (theme !== 'neutral')
+      box.append(
+        node(
+          'p',
+          'Dashed borders: missing owner name or unverified name-match class. Each unknown parcel is a separate research item. Class review is not title verification.',
+        ),
+      );
+  }
   function mount() {
     panel = node('section');
     panel.id = 'land-panel';
     panel.hidden = true;
     panel.setAttribute('aria-label', 'Land ownership');
     panel.innerHTML = `<p>Appraisal-reported parcel ownership · Texas portions of the Permian and Palo Duro basins</p>
- <label>Basin<select data-basin><option value="both">Both basins</option><option value="permian">Permian</option><option value="palo-duro">Palo Duro</option></select></label>
+ <label>Map coloring<select data-theme><option value="neutral">Parcel boundaries</option><option value="class">Owner class</option><option value="research">Ownership research status</option></select></label><div data-theme-legend></div><label>Basin<select data-basin><option value="both">Both basins</option><option value="permian">Permian</option><option value="palo-duro">Palo Duro</option></select></label>
  <label>Select by<select data-mode><option value="all">All owners</option><option value="owner">Specific owner</option><option value="client">Client portfolio</option><option value="class">Owner class</option></select></label>
  <div data-owner-tools><form data-search-form><label>Find an owner<input data-owner-search placeholder="Company or owner name" minlength="2" maxlength="100"></label><button>Search names</button></form><div data-owner-matches></div><div data-selected></div><small>Select multiple owners, then Apply filters.</small></div>
  <label data-client-tools hidden>Client portfolio<select data-client><option value="">Choose a saved client…</option></select></label>
@@ -513,6 +550,10 @@ export function createLandLayer() {
     document.body.append(panel);
     const on = (s, e, f) =>
       panel.querySelector(s).addEventListener(e, f, { signal: abort.signal });
+    on('[data-theme]', 'change', (e) => {
+      theme = e.target.value;
+      void refresh();
+    });
     on('[data-mode]', 'change', () => {
       const mode = panel.querySelector('[data-mode]').value;
       panel.querySelector('[data-client-tools]').hidden = mode !== 'client';
@@ -659,7 +700,7 @@ export function createLandLayer() {
       return () => listeners.delete(fn);
     },
     getState() {
-      return { enabled, loading, error, result, detail };
+      return { enabled, loading, error, result, detail, theme };
     },
     getStats() {
       return {

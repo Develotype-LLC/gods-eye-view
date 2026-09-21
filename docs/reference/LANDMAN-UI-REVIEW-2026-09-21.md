@@ -74,3 +74,12 @@ Implemented the readability batch: collapsible persistent active-map legend, act
 This release retains existing count-preserving viewport clusters; it does **not** implement fixed-area density bins. Quantitative volume symbols, ownership themes/worklists, quiet-basemap shortcuts and the LONG-Haul workflow redesign remain subsequent work.
 
 Validation: production build and package boundaries passed; 49 reference tests passed, including concurrent surface switching and ET null-versus-zero checks. Full suite: 4,195 passed, one skipped, one existing icon-font scanner failure involving unchanged library/owner UI text. Live browser checks covered the legend, Water symbols, layer Details preserving camera/visibility, ET field geometry and surface switching. Browser review found and corrected active-group ordering and an off-layer notice hidden by existing inspector CSS. ET opacity/boundaries were strengthened after reviewing bright imagery.
+
+## Next batches implemented
+
+- Texas wells: fixed EPSG:5070 equal-area density cells (10, 25, 50 km), stable sequential scale, cell inspection and explicit location/density controls. Full-cell counts are cached by import version/category/resolution with bounded entries. These measure inventory locations, not production or operating status.
+- Land & owners preset and parcel themes for owner class/research status. Unknown and partially named parcels stay distinct; name matches remain unverified, and reviewed classification is not title verification. Regional clusters require zooming before parcel themes apply.
+- LONG-Haul: Setup, Compare and Land review steps; persistent endpoints/route summary; ranking slider beside alternatives; advanced assumptions collapsed; mapped crossings can be located on the map. Existing routing and hydraulic calculation scope is unchanged.
+- Private owner workspace: summary before editing plus a project-scoped follow-up directory filtered by name, relationship, due status and team contact. Existing access checks remain mandatory; no memberships granted.
+
+Validation before deployment: 53 reference tests, import/package boundary checks and production build passed. Read-only live SQL returned 1,186 statewide 25-km cells containing 1,396,962 well locations and six detailed parcels with ownership classifications. Full suite: 4,200 passed, one skipped, one existing Material Symbols text-scanner failure; cache regression was added and passed afterward. Browser verification is recorded separately after activation.

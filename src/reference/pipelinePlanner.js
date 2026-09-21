@@ -52,6 +52,62 @@ export function mountPipelinePlanner({ viewer, openInspector }) {
  <fieldset><legend>4 · Compare alternatives</legend><label>Balance: owner-name priority <output data-weight-label>50%</output><input data-input="weight" type="range" min="0" max="100" value="50"></label><div class="pp-scale"><span>Pumping cost</span><span>Fewer owner names</span></div><p>Relative ranking among these candidates. No global optimum, surveyed route, crossing clearance or secured ROW is implied.</p><button class="pp-primary" data-compare>Find route alternatives</button><button type="button" data-cancel hidden>Cancel analysis</button></fieldset></form>
  <p data-status role="status" aria-live="polite">Ready. Set endpoints, then add any required waypoints or exclusion areas. Interactive study chain: 50 m–250 km; large or dense source inventories may require a smaller study.</p><div class="pp-actions"><button data-save>Save draft here</button><button data-load>Load saved draft</button><button data-export disabled>Export selected route</button><button data-clear>Clear route</button></div><small>Drafts stay in this browser. Export a GeoJSON file to share a candidate and its assumptions.</small>
  <div data-results></div><div data-detail></div><details><summary>How estimates work and what is missing</summary><p>Single-phase, steady produced-water screening. Darcy–Weisbach friction with Colebrook turbulent friction (64/Re for laminar flow); hydraulic power divided by combined pump/motor efficiency. Source pressure is assumed to be 0 psi gauge. Head includes outlet pressure and sampled high points without energy recovery. Pipe diameter is inside diameter.</p><p>Terrain: Re:Earth modelled ellipsoidal heights sampled along every route segment, with spacing and progress shown. Between-sample crests, burial depth, fittings, gas, solids, transients, pump curves, pressure ratings and station spacing are not modelled. Annual cost is pumping electricity only; construction, easements and maintenance are excluded.</p><p>TxGIO appraisal owner names may represent different parties or aliases. Names are not a count of contracts. Unknown owner names and unmapped portions remain explicit. Routing uses a finite grid search with mapped RRC pipeline proximity and OSM road, rail and waterway crossing penalties. Drawn exclusions are hard constraints. Routes are searched for distance, infrastructure balance and stronger crossing avoidance, then evaluated for pumping and owners. Terrain and ownership do not yet guide the path search itself. Wetlands, permits, subsurface utilities and engineering clearances are not evaluated. Missing source inventories remain explicit.</p><a href="https://www.energy.gov/ehss/articles/doe-hdbk-10123-92" target="_blank" rel="noopener">DOE fluid-flow method reference</a></details>`;
+  // Keep existing calculation controls, but reveal them in task order.
+  const steps = el('nav');
+  steps.className = 'pp-steps';
+  steps.setAttribute('aria-label', 'LONG-Haul steps');
+  for (const [id, label] of [
+    ['setup', '1 · Setup'],
+    ['compare', '2 · Compare'],
+    ['land', '3 · Land review'],
+  ]) {
+    const button = el('button', label);
+    button.type = 'button';
+    button.dataset.stage = id;
+    button.addEventListener('click', () => {
+      stop();
+      setStage(id);
+    });
+    steps.append(button);
+  }
+  const studySummary = el('p');
+  studySummary.dataset.studySummary = '';
+  panel.querySelector('.pp-intro').after(steps, studySummary);
+  const setup = el('div');
+  setup.dataset.stagePanel = 'setup';
+  const compare = el('div');
+  compare.dataset.stagePanel = 'compare';
+  const landReview = el('div');
+  landReview.dataset.stagePanel = 'land';
+  const form = panel.querySelector('[data-form]');
+  form.before(setup);
+  setup.append(form);
+  const ranking = form
+    .querySelector('[data-input="weight"]')
+    .closest('fieldset');
+  const compareControls = el('fieldset');
+  compareControls.append(el('legend', 'Rank these alternatives'));
+  for (const node of [...ranking.children])
+    if (!node.matches('legend,button')) compareControls.append(node);
+  compareControls.querySelector('label').firstChild.textContent =
+    'Recorded owner-name priority ';
+  compareControls.querySelector('p').textContent =
+    'Reranks these generated alternatives by pumping cost and recorded owner names. This does not change their paths. Unresolved parcels and missing coverage remain separate.';
+  ranking.querySelector('legend').textContent = 'Find alternatives';
+  compare.append(compareControls, panel.querySelector('[data-results]'));
+  const reviewButton = el('button', 'Review selected route’s land →');
+  reviewButton.type = 'button';
+  reviewButton.addEventListener('click', () => setStage('land'));
+  compare.append(reviewButton);
+  landReview.append(panel.querySelector('[data-detail]'));
+  setup.after(compare, landReview);
+  const preferencesField = form
+    .querySelector('[data-route="discount"]')
+    .closest('.pp-inputs');
+  const advanced = el('details');
+  advanced.append(el('summary', 'Advanced routing penalties'));
+  preferencesField.before(advanced);
+  advanced.append(preferencesField);
   document.body.append(panel);
   const data = new Cesium.CustomDataSource('LONG-Haul routes');
   void viewer.dataSources.add(data);
@@ -68,11 +124,25 @@ export function mountPipelinePlanner({ viewer, openInspector }) {
     routingRun = null,
     preferences = { ...ROUTING_DEFAULTS },
     exclusions = [],
-    drawing = [];
+    drawing = [],
+    stage = 'setup';
   const on = (s, e, f) =>
     panel.querySelector(s).addEventListener(e, f, { signal: lifetime.signal });
   const status = (text) =>
     (panel.querySelector('[data-status]').textContent = text);
+  function setStage(next) {
+    stage = next !== 'setup' && !routes.length ? 'setup' : next;
+    for (const container of panel.querySelectorAll('[data-stage-panel]'))
+      container.hidden = container.dataset.stagePanel !== stage;
+    for (const button of steps.querySelectorAll('button')) {
+      button.disabled = button.dataset.stage !== 'setup' && !routes.length;
+      button.setAttribute(
+        'aria-pressed',
+        String(button.dataset.stage === stage),
+      );
+    }
+    studySummary.textContent = `A: ${panel.querySelector('[data-a]').value || 'not set'} → B: ${panel.querySelector('[data-b]').value || 'not set'}${selected ? ' · ' + (routes.find((r) => r.id === selected)?.name || '') : ''}`;
+  }
   function open() {
     openInspector({
       id: 'pipeline-planner',
@@ -113,6 +183,7 @@ export function mountPipelinePlanner({ viewer, openInspector }) {
     request = null;
     routes = [];
     selected = null;
+    setStage('setup');
     panel.querySelector('[data-results]').replaceChildren();
     panel.querySelector('[data-detail]').replaceChildren();
     panel.querySelector('[data-export]').disabled = true;
@@ -525,6 +596,7 @@ export function mountPipelinePlanner({ viewer, openInspector }) {
           ranking.balanced) ||
         routes[0].id;
       render();
+      setStage('compare');
       fit();
       status(
         infrastructure.sources.some((s) => s.status !== 'available')
@@ -588,6 +660,12 @@ export function mountPipelinePlanner({ viewer, openInspector }) {
           'No automatic recommendation: available infrastructure inventories, full mapped parcel coverage, known appraisal names and complete terrain are required. You can inspect every candidate below.',
         ),
       );
+    box.append(
+      el(
+        'p',
+        'Known names: distinct recorded appraisal names, not verified legal parties or contracts. Parcels: corridor intersections. Unresolved: missing owner names, including partially named parcels. Mapped: centerline covered by imported parcels.',
+      ),
+    );
     const table = el('table');
     table.innerHTML =
       '<thead><tr><th>Candidate</th><th>mi</th><th>Known names</th><th>Parcels</th><th>Unresolved</th><th>Pumping / yr</th><th>Mapped</th></tr></thead>';
@@ -668,6 +746,7 @@ export function mountPipelinePlanner({ viewer, openInspector }) {
     draw();
     renderDetail();
     panel.querySelector('[data-export]').disabled = !selected;
+    setStage(stage);
   }
   function renderDetail() {
     const box = panel.querySelector('[data-detail]');
@@ -694,13 +773,36 @@ export function mountPipelinePlanner({ viewer, openInspector }) {
       );
       const crossings = el('details');
       crossings.append(el('summary', 'Mapped crossings to review'));
-      for (const x of facts.crossings)
-        crossings.append(
-          el(
-            'p',
-            `${x.kind} · ${x.name} · ${x.point[1].toFixed(5)}, ${x.point[0].toFixed(5)}`,
-          ),
+      for (const x of facts.crossings) {
+        const button = el(
+          'button',
+          `${x.kind} · ${x.name} · ${x.point[1].toFixed(5)}, ${x.point[0].toFixed(5)}`,
         );
+        button.type = 'button';
+        button.addEventListener('click', () => {
+          data.entities.removeById('longhaul-selected-crossing');
+          data.entities.add({
+            id: 'longhaul-selected-crossing',
+            position: Cesium.Cartesian3.fromDegrees(...x.point),
+            point: {
+              pixelSize: 15,
+              color: Cesium.Color.WHITE,
+              outlineColor: Cesium.Color.BLACK,
+              outlineWidth: 3,
+              heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+              disableDepthTestDistance: Infinity,
+            },
+          });
+          viewer.camera.flyTo({
+            destination: Cesium.Cartesian3.fromDegrees(...x.point, 3500),
+            duration: 1.2,
+          });
+          status(
+            `Selected mapped ${x.kind} crossing: ${x.name}. Source: routing infrastructure inventory; not a surveyed crossing.`,
+          );
+        });
+        crossings.append(button);
+      }
       box.append(crossings);
     }
     const fitButton = el('button', 'Fit candidate routes');
@@ -1052,6 +1154,7 @@ export function mountPipelinePlanner({ viewer, openInspector }) {
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
+  setStage('setup');
   const picker = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
   picker.setInputAction((event) => {
     if (!picking || document.body.dataset.pipelinePicking !== picking) return;

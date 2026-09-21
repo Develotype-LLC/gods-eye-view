@@ -1090,3 +1090,42 @@ body.landman-mode #cctv-sync-chip {
 #landman-workspace .lm-inspector-content > .lm-inspector-notice:not([hidden]) {
   display: block !important;
 }
+
+#land-panel [data-theme-legend] span {
+  display: inline-block;
+  padding: 3px 8px 3px 0;
+}
+.pp-steps {
+  display: flex;
+  gap: 6px;
+  margin: 12px 0;
+}
+#landman-workspace .pp-steps button {
+  flex: 1;
+  min-height: 42px;
+  padding: 7px;
+}
+#landman-workspace .pp-steps button[aria-pressed='true'] {
+  background: #426658;
+  border-color: #b2ceb9;
+}
+#pipeline-panel [data-stage-panel][hidden] {
+  display: none !important;
+}
+#pipeline-panel [data-study-summary] {
+  position: sticky;
+  top: 0;
+  background: #132125;
+  padding: 8px 0;
+  z-index: 1;
+  overflow-wrap: anywhere;
+}
+#pipeline-panel [data-stage-panel='compare'] > button {
+  width: 100%;
+  margin: 12px 0;
+}
+#pipeline-panel [data-detail] details button {
+  display: block;
+  margin: 5px 0;
+  text-align: left;
+}

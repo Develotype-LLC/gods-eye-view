@@ -1,4 +1,5 @@
 import * as Cesium from 'cesium';
+import { densityColor } from './densityModel.js';
 const TEXAS = [-106.7, 25.7, -93.4, 36.6];
 export function createTexasLayer() {
   let viewer,
@@ -10,6 +11,9 @@ export function createTexasLayer() {
     detail = null,
     history = null,
     category = '',
+    view = 'auto',
+    cellKm = 25,
+    bin = null,
     result = null,
     error = null,
     loading = false,
@@ -49,7 +53,12 @@ export function createTexasLayer() {
     try {
       const data = await get(
         'viewport?' +
-          new URLSearchParams({ bbox: bounds().join(','), category }),
+          new URLSearchParams({
+            bbox: bounds().join(','),
+            category,
+            view,
+            cellKm: String(cellKm),
+          }),
         request.signal,
       );
       if (!enabled || intent !== generation) return;
@@ -57,6 +66,25 @@ export function createTexasLayer() {
       source.entities.removeAll();
       picks.clear();
       data.features.forEach((feature, i) => {
+        if (data.mode === 'density') {
+          const id = `texas:${i}`;
+          picks.set(id, feature);
+          source.entities.add({
+            id,
+            polygon: {
+              hierarchy: new Cesium.PolygonHierarchy(
+                Cesium.Cartesian3.fromDegreesArray(
+                  feature.geometry.coordinates[0].flat(),
+                ),
+              ),
+              material: Cesium.Color.fromCssColorString(
+                densityColor(feature.density),
+              ).withAlpha(0.62),
+              classificationType: Cesium.ClassificationType.BOTH,
+            },
+          });
+          return;
+        }
         const id = `texas:${i}`;
         picks.set(id, feature);
         const cluster = data.mode === 'clusters';
@@ -111,6 +139,7 @@ export function createTexasLayer() {
   }
   let selectIntent = 0;
   async function select(query) {
+    bin = null;
     const intent = ++selectIntent;
     detail = null;
     history = null;
@@ -173,7 +202,26 @@ export function createTexasLayer() {
         duration: 1.5,
       });
     },
+    setView(value, size = cellKm) {
+      view = value;
+      cellKm = Number(size);
+      bin = null;
+      void refresh();
+    },
+    zoomBin() {
+      if (bin)
+        viewer.camera.flyTo({
+          destination: Cesium.Rectangle.fromDegrees(
+            bin.west,
+            bin.south,
+            bin.east,
+            bin.north,
+          ),
+          duration: 1.2,
+        });
+    },
     setCategory(value) {
+      bin = null;
       category = value;
       void refresh();
     },
@@ -196,6 +244,12 @@ export function createTexasLayer() {
     pick(id) {
       const row = picks.get(id);
       if (!row) return;
+      if (result.mode === 'density') {
+        bin = { ...row, cellKm: result.cellKm };
+        detail = null;
+        notify();
+        return;
+      }
       if (result.mode === 'clusters') {
         const pad = Math.max(0.015, (row.east - row.west) * 0.1);
         viewer.camera.flyTo({
@@ -233,6 +287,9 @@ export function createTexasLayer() {
         detail,
         history,
         category,
+        view,
+        cellKm,
+        bin,
         result,
         error,
         loading,

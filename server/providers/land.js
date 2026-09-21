@@ -55,10 +55,10 @@ export function parseLandFilters(q) {
 const ROLES = `CASE WHEN o.reviewed_at IS NOT NULL THEN o.reviewed_roles WHEN $5 THEN o.candidate_roles ELSE '{}'::text[] END`;
 const FILTER = `p.snapshot_id=c.snapshot_id AND cardinality(p.basins)>0 AND ($1='both' OR $1=ANY(p.basins))
  AND ($6='appraisal' OR EXISTS(SELECT 1 FROM landman.land_interest i WHERE i.parcel_id=p.id AND i.kind=$6))
- AND EXISTS(SELECT 1 FROM landman.land_account a JOIN landman.land_owner o ON o.owner_key=a.owner_key WHERE a.parcel_id=p.id
+ AND ((cardinality($4::text[])=0 AND $3='' AND ($2='' OR $2='unclassified') AND NOT EXISTS(SELECT 1 FROM landman.land_account a WHERE a.parcel_id=p.id)) OR EXISTS(SELECT 1 FROM landman.land_account a JOIN landman.land_owner o ON o.owner_key=a.owner_key WHERE a.parcel_id=p.id
  AND (cardinality($4::text[])=0 OR a.owner_key=ANY($4::text[]))
  AND ($3='' OR EXISTS(SELECT 1 FROM landman.land_client_owner co WHERE co.owner_key=a.owner_key AND co.client_id=NULLIF($3,'')::bigint))
- AND ($2='' OR ($2='unclassified' AND cardinality(${ROLES})=0) OR $2=ANY(${ROLES})))`;
+ AND ($2='' OR ($2='unclassified' AND cardinality(${ROLES})=0) OR $2=ANY(${ROLES}))))`;
 const FROM =
   'FROM landman.land_parcel p JOIN landman.land_county c ON c.snapshot_id=p.snapshot_id';
 export function landProxy({ pool: providedPool } = {}) {
@@ -138,7 +138,9 @@ export function landProxy({ pool: providedPool } = {}) {
     }
     const rows = (
       await query(
-        `SELECT p.id,p.area_acres,c.name AS county,p.basins,ST_AsGeoJSON(p.geom,6)::json AS geometry,(SELECT string_agg(DISTINCT a.raw_owner,' / ') FROM landman.land_account a WHERE a.parcel_id=p.id) AS owner ${FROM} WHERE ${scoped} ORDER BY p.id LIMIT 600`,
+        `SELECT p.id,p.area_acres,c.name AS county,p.basins,ST_AsGeoJSON(p.geom,6)::json AS geometry,(SELECT string_agg(DISTINCT a.raw_owner,' / ') FROM landman.land_account a WHERE a.parcel_id=p.id) AS owner,
+        coalesce((SELECT json_agg(json_build_object('key',a.owner_key,'name',a.raw_owner,'roles',${ROLES},'reviewed',o.reviewed_at IS NOT NULL)) FROM landman.land_account a JOIN landman.land_owner o ON o.owner_key=a.owner_key WHERE a.parcel_id=p.id),'[]'::json) AS ownership
+        ${FROM} WHERE ${scoped} ORDER BY p.id LIMIT 600`,
         all,
       )
     ).rows;

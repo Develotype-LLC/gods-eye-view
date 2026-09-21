@@ -109,15 +109,46 @@ export function ownerWorkspace(db) {
         ).rows,
       };
     const project = await access(q.get('project'), actor);
-    if (path === '/owner-directory')
+    if (path === '/owner-directory') {
+      const term = (q.get('q') || '').trim(),
+        relationship = q.get('relationship') || '',
+        due = q.get('due') || '',
+        sponsor = (q.get('sponsor') || '').trim();
+      if (
+        term.length > 100 ||
+        sponsor.length > 120 ||
+        ![
+          '',
+          'not-assessed',
+          'no-known-relationship',
+          'introduction-available',
+          'existing-relationship',
+        ].includes(relationship) ||
+        !['', 'due', 'undated'].includes(due)
+      )
+        throw fail(400, 'Invalid worklist filters');
+      const pattern = (value) => '%' + value.replace(/[\\%_]/g, '\\$&') + '%';
       return {
         profiles: (
           await db().query(
-            "SELECT id,subject,name,revision,updated_by,updated_at,data->>'relationship' AS relationship,data->>'willingness' AS willingness,data->>'transaction' AS transaction,data->>'followupOn' AS followup FROM landman.owner_profile WHERE project_id=$1 ORDER BY updated_at DESC LIMIT 201",
-            [project.id],
+            `SELECT id,subject,name,revision,updated_by,updated_at,data->>'relationship' AS relationship,data->>'willingness' AS willingness,data->>'transaction' AS transaction,data->>'followupOn' AS followup,data->>'sponsor' AS sponsor,data->>'nextAction' AS next_action FROM landman.owner_profile WHERE project_id=$1
+        AND ($2='' OR name ILIKE $3) AND ($4='' OR data->>'relationship'=$4)
+        AND ($5='' OR ($5='due' AND NULLIF(data->>'followupOn','')<=CURRENT_DATE::text) OR ($5='undated' AND NULLIF(data->>'followupOn','') IS NULL))
+        AND ($6='' OR data->>'sponsor' ILIKE $7)
+        ORDER BY NULLIF(data->>'followupOn','') ASC NULLS LAST,updated_at DESC LIMIT 201`,
+            [
+              project.id,
+              term,
+              pattern(term),
+              relationship,
+              due,
+              sponsor,
+              pattern(sponsor),
+            ],
           )
         ).rows,
       };
+    }
     const subject = q.get('subject') || '';
     if (
       subject.length > 340 ||
