@@ -1,11 +1,14 @@
 # Reference layers and source plan
 
+Existing local sources and reuse priorities are inventoried in [LOCAL-PROJECT-REUSE.md](LOCAL-PROJECT-REUSE.md). This includes Basin Atlas infrastructure, the produced-water regulatory platform, science-data history, USGS chemistry, and the Exxon offline package.
+
 Status: first ground-movement pilot implemented, 2026-09-20. This is the proposed source roadmap, not a claim that every dataset has been imported or its current access terms verified. The in-app Library uses src/reference/catalog.js.
 
 Available = implemented map control; On disk = artifacts found in HeavenWatch, pending quality review and export; Planned = proposed source; Future = product availability to verify; Research only = unsuitable for operational display.
 
 | Layer | Status | Source | Initial coverage | Next step |
 |---|---|---|---|---|
+| US geological basins | Available | USGS Sedimentary Basins of the U.S.A. | Contiguous US, Alaska, Hawaii and offshore basin areas | 144 source features; named-basin selection, classification and source scale. |
 | Texas wells · statewide database | Available | [Texas RRC public GIS + statewide UIC permit master](https://www.rrc.texas.gov/resource-center/research/data-sets-available-for-download/) | Statewide Texas · all published GIS well-location classifications | Add other statewide datasets and preserve source-specific identifiers and reporting dates. |
 | Ground movement · OPERA | Available | [NASA JPL OPERA DISP-S1 / ASF DAAC](https://www.jpl.nasa.gov/go/opera/products/disp-product-suite/) | Crane County / Tubbs Corner · 2016–2025 | Expand by region and acquisition window after validating each export. |
 | Radar coherence and coverage | On disk | [OPERA DISP-S1 ancillary layers](https://www.jpl.nasa.gov/go/opera/products/disp-product-suite/) | HeavenWatch validation areas | Export time-aware quality summaries from the existing cube. |
@@ -95,3 +98,9 @@ Production cache is `/var/lib/godseye/rrc-injection.json` (`StateDirectory=godse
 ## Statewide database
 
 The dedicated PostgreSQL/PostGIS database and Texas wells layer extend beyond the Crane County pilot to the complete RRC GIS location and UIC permit inventories. The database serves viewport clusters, source-classification filters and API search. Per-well disposal history is fetched and saved on demand. See [database runbook](../../deploy/database/README.md) for source coverage, import reconciliation, access controls and refresh procedures.
+
+## National basin overlay
+
+USGS source: https://energy.usgs.gov/arcgis/rest/services/BaseMaps/Sedimentary_Basin/MapServer/0
+
+Refresh with `python3 scripts/export-us-basins.py` before building. The ignored `public/reference-data/basins/` files are copied into the deployment build, with retrieval time and SHA-256 in `manifest.json`. The query requests WGS84 coordinates, four decimal places and 0.02-degree display generalization, reconciling the source feature count. The September 2026 capture contains 144 features, rendered as 207 polygon parts and 209 rings. Multipart basins share one selector entry. This is a retrieved historical interpretation, not a claim of a September 2026 geological revision. Source scale, era and basin type remain visible. Boundaries are regional screening context, not leases, formation-level boundaries or hydrocarbon presence. No API key is required.

@@ -61,6 +61,19 @@ export function mountReferenceLibrary({viewer, dataManager, layer, catalog}) {
     detail.append(dl);
     const link = el('a', 'Open source documentation ↗'); link.href = item.url; link.target = '_blank'; link.rel = 'noopener noreferrer'; detail.append(link);
     if (!item.layerId) {detail.append(el('p', item.status === 'On disk' ? 'Source artifacts exist in HeavenWatch. They still need an import and quality review before they can be displayed here.' : 'Roadmap item — this layer is not connected yet.', 'ref-note')); return;}
+    if (item.layerId === 'us-basins') {
+      const status = el('p', 'USGS boundary snapshot · 144 source polygons · retrieved September 2026', 'ref-note');
+      const view = el('button', 'View US geological basins', 'ref-primary');
+      view.addEventListener('click', async () => {
+        view.disabled = true;
+        try {
+          await dataManager.setEnabled('us-basins', true, {origin: 'user'});
+          if (!dataManager.isEnabled('us-basins')) throw new Error('Basin layer could not be enabled');
+          catalog.get('us-basins').flyTo(); dialog.close();
+        } catch (error) {status.textContent = error.message;} finally {view.disabled = false;}
+      });
+      detail.append(status, view); return;
+    }
     if (item.layerId === 'texas-wells') {
       const texasLayer = catalog.get('texas-wells');
       const status = el('p', 'Reading statewide database…', 'ref-note'); detail.append(status);
