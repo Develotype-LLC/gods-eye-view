@@ -590,3 +590,13 @@ body.landman-mode #cctv-sync-chip {
   color: #e0bf88;
   font-size: 11px;
 }
+
+.motion-history [hidden] { display: none !important; }
+.motion-history p { line-height: 1.5; margin: 10px 0; }
+.motion-history form { display: flex; flex-wrap: wrap; gap: 6px; }
+.motion-history input { min-width: 0; width: 100%; }
+.motion-history svg { width: 100%; background: #14242b; border: 1px solid #42545a; border-radius: 6px; }
+.motion-history h3 { color: #77d1c4; font-size: 22px; }
+.motion-history table { width: 100%; font-size: 12px; }
+.motion-history td { padding: 4px; }
+.motion-regions { display: flex; gap: 6px; margin: 10px 0; flex-wrap: wrap; }

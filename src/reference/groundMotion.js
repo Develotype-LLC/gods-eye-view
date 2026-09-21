@@ -6,7 +6,7 @@ const ROOT = '/reference-data/heavenwatch/';
 
 export function createGroundMotionLayer() {
   let viewer, mapController, manifest, manifestPromise, imagery, enabled = false, destroyed = false;
-  let reference=null,referenceValue=null;
+  let reference=null,referenceValue=null, coverage='us', direction='ascending';
   let variantId = 'displacement', opacity = 0.7, generation = 0, error = null;
   const listeners = new Set();
   const values = new Map();
@@ -35,6 +35,28 @@ export function createGroundMotionLayer() {
   }
   async function show() {
     const intent = ++generation;
+    if (coverage === 'us') {
+      const provider = new Cesium.UrlTemplateImageryProvider({
+        url: `/api/reference/ground-motion/tiles/${direction === 'ascending' ? 'asc' : 'desc'}/{z}/{x}/{y}.png`,
+        maximumLevel: 12, credit: new Cesium.Credit('NASA OPERA / ASF · short-wavelength LOS velocity'),
+      });
+      // ASF tiles encode velocity in their red channel; apply the portal's diverging palette.
+      const requestImage = provider.requestImage.bind(provider);
+      provider.requestImage = (x,y,level,request) => {
+        const result = requestImage(x,y,level,request);
+        if (!result) return result;
+        return Promise.resolve(result).then(image => {
+          const canvas = document.createElement('canvas'); canvas.width=image.width; canvas.height=image.height;
+          const ctx=canvas.getContext('2d');ctx.drawImage(image,0,0);
+          const pixels=ctx.getImageData(0,0,canvas.width,canvas.height);
+          for(let i=0;i<pixels.data.length;i+=4){const alpha=pixels.data[i+3],color=divergingColor((pixels.data[i]/255*60)-30,30);pixels.data.set([color[0],color[1],color[2],alpha],i);}
+          ctx.putImageData(pixels,0,0);return canvas;
+        });
+      };
+      if (destroyed || intent !== generation || !enabled) return;
+      removeImagery();imagery=viewer.imageryLayers.addImageryProvider(provider);imagery.alpha=opacity;
+      referenceValue=null;error=null;render();notify();return;
+    }
     const data = await readManifest();
     const variant = data.variants.find(item => item.id === variantId);
     if (!variant) throw new Error('Unknown ground-motion variant');
@@ -63,7 +85,7 @@ export function createGroundMotionLayer() {
   }
   return {
     id: 'ground-motion', name: 'Ground movement · OPERA', icon: '◈',
-    source: 'NASA OPERA · 2016–2025 snapshot', updateInterval: 0,
+    source: 'NASA OPERA / ASF · US coverage', updateInterval: 0,
     init(sceneViewer) { viewer = sceneViewer; return true; },
     attachMapStackController(value) { mapController = value; },
     async enable() {
@@ -82,7 +104,9 @@ export function createGroundMotionLayer() {
     update() { return true; },
     readManifest,
     subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
-    getState() { return {enabled, variantId, opacity, manifest, error, reference, referenceValue}; },
+    getState() { return {enabled, variantId, opacity, manifest, error, reference, referenceValue, coverage, direction}; },
+    async setCoverage(value) {if(!['us','crane'].includes(value))throw Error('Unknown coverage');coverage=value;if(enabled)await show();else notify();},
+    async setDirection(value) {if(!['ascending','descending'].includes(value))throw Error('Unknown orbit');direction=value;if(enabled)await show();else notify();},
     async setReference(point){reference=point;if(enabled)await show();else notify();},
     async setVariant(id) {
       const data = await readManifest();
@@ -98,12 +122,14 @@ export function createGroundMotionLayer() {
       if (imagery) imagery.alpha = opacity;
       render(); notify();
     },
-    async flyTo() {
+    async flyTo(region='us') {
+      if(coverage === 'us'){viewer.camera.flyTo({destination:Cesium.Rectangle.fromDegrees(...({us:[-125,24,-66,50],alaska:[-170,52,-130,71],hawaii:[-161,18,-154,23]}[region]||[-125,24,-66,50])),duration:1.5});return;}
       const data = await readManifest();
       if (mapController?.getActiveStack()?.id === 'photoreal') await mapController.setStack('esri-imagery');
       viewer.camera.flyTo({destination: Cesium.Rectangle.fromDegrees(...data.variants[0].bounds), duration: 1.5});
     },
     async sample(longitude, latitude) {
+      if(coverage === 'us')return {status:'history',variant:'US overview · use Ground movement inspector for point history'};
       const data = await readManifest();
       const variant = data.variants.find(item => item.id === variantId);
       if (!values.has(variant.id)) {
@@ -114,6 +140,6 @@ export function createGroundMotionLayer() {
       return {...sampleRaster(variant, values.get(variant.id), longitude, latitude), variant: variant.label};
     },
     getStats() {return {count: enabled ? 1 : 0, source: 'NASA OPERA · historical snapshot',
-      coverage: 'Crane County · 2016–2025 · LOS mm/year', error};},
+      coverage: coverage === 'us' ? 'US / ASF coverage · long-term LOS mm/year' : 'Crane County · 2016–2025 · LOS mm/year', error};},
   };
 }

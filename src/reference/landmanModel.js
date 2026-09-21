@@ -77,8 +77,8 @@ export const LANDMAN_LAYERS = [
     id: 'ground-motion',
     group: 'Geology & movement',
     name: 'Ground movement',
-    source: 'NASA OPERA · Crane County',
-    tag: 'Pilot',
+    source: 'NASA OPERA / ASF · United States',
+    tag: 'US coverage',
     color: '#ad93e7',
     inspector: 'ground-motion-legend',
   },
@@ -174,9 +174,9 @@ export const LANDMAN_VIEWS = [
   {
     id: 'movement',
     name: 'Ground movement',
-    description: 'OPERA ground motion with reviewed earthquakes',
+    description: 'US OPERA ground motion; TexNet earthquakes in Texas',
     layers: ['ground-motion', 'texnet-seismic'],
-    bounds: [-102.9, 31.25, -102.4, 31.65],
+    bounds: [-125, 24, -66, 50],
     inspector: 'ground-motion',
   },
   {

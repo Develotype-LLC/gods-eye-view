@@ -167,7 +167,8 @@ export function mountLocationInvestigation({
       dataManager.isEnabled('terrain-difference') &&
       dataManager.isEnabled('ground-motion')
     );
-    panel.querySelector('[data-motion-ramp]').style.background = m.reference
+    panel.querySelector('[data-relative]').disabled = m.coverage === 'us';
+    panel.querySelector('[data-motion-ramp]').style.background = m.coverage === 'us' || m.reference
       ? 'linear-gradient(90deg,#278ec4,#ebe7cb,#d74e2b)'
       : 'linear-gradient(90deg,#053061,#4393c3,#d1e5f0,#f7f7f7,#fddbc7,#d6604d,#67001f)';
     panel.querySelector('[data-terrain-legend]').textContent =
@@ -176,7 +177,7 @@ export function mountLocationInvestigation({
         : 'Set point A with a valid terrain height to color the terrain.';
     panel.querySelector('[data-motion-legend]').textContent =
       m.error ||
-      (m.reference
+      (m.coverage === 'us' ? 'US long-term velocity overview · ±30 mm/year. Open Ground movement for date-window point history. Relative-to-A coloring requires the Crane archive.' : m.reference
         ? `Relative LOS velocity · B minus A · ±30 mm/year. A: ${number(m.referenceValue, 'mm/year')}. Historical 2016–2025 snapshot; not displacement between two selected dates.`
         : 'Absolute LOS velocity · ±30 mm/year · historical 2016–2025 snapshot.');
   }
@@ -268,7 +269,7 @@ export function mountLocationInvestigation({
               'p',
               d.atB.status === 'value'
                 ? `B LOS velocity: ${number(d.atB.value, 'mm/year')}`
-                : d.atB.status === 'outside'
+                : d.atB.status === 'history' ? 'Open Ground movement to read this location’s US time series. The national overview is long-term velocity; A-relative coloring is available in the Crane archive.' : d.atB.status === 'outside'
                   ? 'B is outside the installed OPERA snapshot.'
                   : 'B is a no-data pixel.',
             ),
@@ -281,7 +282,7 @@ export function mountLocationInvestigation({
               ),
             );
           card.append(
-            node('small', 'NASA OPERA · 2016–2025 · ' + d.atB.variant),
+            node('small', (d.atB.status === 'history' ? 'NASA OPERA / ASF · ' : 'NASA OPERA · 2016–2025 · ') + d.atB.variant),
           );
         },
       );

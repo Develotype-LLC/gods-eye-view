@@ -1,6 +1,7 @@
 import { referenceRecordsProxy } from './reference-records.js';
 import { texasProxy } from './texas.js';
 import { rrcProxy } from './rrc.js';
+import { operaNationalProxy } from './opera-national.js';
 import { groundMotionProxy } from './ground-motion.js';
 import { openSkyProxy } from './aircraft/opensky.js';
 import { celestrakProxy, rocketLaunchesProxy } from './space.js';
@@ -52,6 +53,7 @@ function localProviderPlugins() {
     googlePlacesContextProxy(),
     googleGeocodingProxy(),
     groundMotionProxy(),
+    operaNationalProxy(),
     rrcProxy(),
     texasProxy(),
     referenceRecordsProxy(),

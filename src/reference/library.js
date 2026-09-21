@@ -1,3 +1,4 @@
+import {mountMotionHistoryPanel} from './motionHistoryPanel.js';
 import * as Cesium from 'cesium';
 import { REFERENCE_CATALOG } from './catalog.js';
 
@@ -14,8 +15,9 @@ export function mountReferenceLibrary({viewer, dataManager, layer, catalog}) {
   const legend = document.createElement('section');
   legend.id = 'ground-motion-legend'; legend.hidden = true;
   legend.setAttribute('aria-label', 'Ground movement legend');
-  legend.innerHTML = `<header><strong>GROUND MOVEMENT</strong><button data-hide aria-label="Hide ground movement">✕</button></header><small>NASA OPERA · historical LOS velocity<br>2016-08-01 → 2025-12-30</small><label>Measurement<select data-variant><option value="displacement">Full displacement</option><option value="short_wavelength_displacement">Short wavelength</option></select></label><div class="ref-colorbar"></div><div class="ref-scale"><span>−30 · away</span><span>0</span><span>+30 · toward</span></div><small>mm/year · relative to satellite · colors saturate</small><label>Opacity<input data-opacity type="range" min="0" max="1" step="0.05" value="0.7"></label><p data-sample role="status">Click inside the colored area to sample a pixel.</p><button data-library>Sources & layer library</button>`;
+  legend.innerHTML = `<header><strong>GROUND MOVEMENT</strong><button data-hide aria-label="Hide ground movement">✕</button></header><small data-motion-heading>NASA OPERA / ASF · long-term LOS velocity</small><label>Measurement<select data-variant><option value="displacement">Full displacement</option><option value="short_wavelength_displacement">Short wavelength</option></select></label><div class="ref-colorbar"></div><div class="ref-scale"><span>−30 · away</span><span>0</span><span>+30 · toward</span></div><small>mm/year · relative to satellite · colors saturate</small><label>Opacity<input data-opacity type="range" min="0" max="1" step="0.05" value="0.7"></label><p data-sample role="status">Click inside the colored area to sample a pixel.</p><button data-library>Sources & layer library</button>`;
   document.body.append(legend);
+  const historyPanel = mountMotionHistoryPanel(legend, layer);
   const detail = dialog.querySelector('.ref-detail'), nav = dialog.querySelector('nav');
   const sample = legend.querySelector('[data-sample]');
   let selected = 'texas-wells', disposed = false, selection = 0, sampleIntent = 0;
@@ -36,8 +38,10 @@ export function mountReferenceLibrary({viewer, dataManager, layer, catalog}) {
   function sync() {
     const state = layer.getState();
     legend.hidden = !dataManager.isEnabled('ground-motion');
-    legend.querySelector('.ref-colorbar').style.background=state.reference?'linear-gradient(90deg,#278ec4,#ebe7cb,#d74e2b)':'';
-    legend.querySelector('.ref-scale').innerHTML=state.reference?'<span>−30 · below A rate</span><span>0</span><span>+30 · above A rate</span>':'<span>−30 · away</span><span>0</span><span>+30 · toward</span>';
+    legend.querySelector('[data-motion-heading]').textContent=state.coverage==='us'?'NASA OPERA / ASF · US velocity overview · dates vary by frame':'Crane archive · 2016-08-01 → 2025-12-30';
+    const relative=state.coverage==='crane'&&state.reference;
+    legend.querySelector('.ref-colorbar').style.background=state.coverage==='us'||relative?'linear-gradient(90deg,#278ec4,#ebe7cb,#d74e2b)':'';
+    legend.querySelector('.ref-scale').innerHTML=relative?'<span>−30 · below A rate</span><span>0</span><span>+30 · above A rate</span>':'<span>−30 · away</span><span>0</span><span>+30 · toward</span>';
     if(state.error)sample.textContent=state.error;
     legend.querySelector('[data-variant]').value = state.variantId;
     legend.querySelector('[data-opacity]').value = state.opacity;
@@ -161,6 +165,7 @@ export function mountReferenceLibrary({viewer, dataManager, layer, catalog}) {
     const ray = viewer.camera.getPickRay(event.position);
     const point = ray && viewer.scene.globe.pick(ray, viewer.scene); if (!point) return;
     const geo = Cesium.Cartographic.fromCartesian(point), intent = ++sampleIntent;
+    if(layer.getState().coverage==='us'){sample.textContent='Point history shown above.';void historyPanel.inspect(Cesium.Math.toDegrees(geo.longitude),Cesium.Math.toDegrees(geo.latitude));return;}
     const variant = layer.getState().variantId;
     sample.textContent = 'Reading pixel…';
     try {
@@ -171,5 +176,5 @@ export function mountReferenceLibrary({viewer, dataManager, layer, catalog}) {
     } catch (error) {if (!disposed && sampleIntent === intent) sample.textContent = error.message;}
   }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
   list(); void showDetail(REFERENCE_CATALOG[0]); sync();
-  return () => {disposed = true; abort.abort(); unsubscribe(); unactivity(); picker.destroy(); dialog.remove(); legend.remove();};
+  return () => {disposed = true; abort.abort(); unsubscribe(); unactivity(); picker.destroy(); historyPanel.destroy(); dialog.remove(); legend.remove();};
 }
