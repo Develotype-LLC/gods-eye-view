@@ -1,3 +1,4 @@
+import { createInjectionLayer } from '../reference/injection.js';
 import { createLayerCatalog } from './catalog.js';
 import { LAYER_STATE_REGISTRY } from '../data/layerState.js';
 import { createMilitaryRegistry } from '../layers/aircraft/classification.js';
@@ -106,6 +107,7 @@ export function createApplicationCatalog({
     const catalog = createLayerCatalog(
       [
         createGroundMotionLayer(),
+    createInjectionLayer(),
         createBhoteKoshiEventLayer(),
         createBhoteKoshiLocatorLayer({
           boundaryResolver: nepalBoundaryResolver,

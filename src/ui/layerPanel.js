@@ -14,7 +14,7 @@ const FEED_STATE_LABELS = Object.freeze({
 
 // Presentation order is independent of catalog registration and startup order.
 const PANEL_GROUPS = [
-  {label: 'Reference layers', ids: ['ground-motion']},
+  {label: 'Reference layers', ids: ['ground-motion', 'injection-wells']},
   {
     label: 'Movement',
     ids: [

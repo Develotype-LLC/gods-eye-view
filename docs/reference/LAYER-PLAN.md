@@ -13,8 +13,8 @@ Available = implemented map control; On disk = artifacts found in HeavenWatch, p
 | Radar backscatter and wetting | Planned | [OPERA RTC-S1 / ASF DAAC](https://www.jpl.nasa.gov/go/opera/products/) | Permian pilot areas | Pair with precipitation before deriving anomalies. |
 | Surface temperature | Planned | [NASA ECOSTRESS; USGS Landsat Collection 2 L2](https://ecostress.jpl.nasa.gov/) | Scene-dependent | Inventory usable scenes and current product quality notes. |
 | NISAR displacement | Future | [NASA–ISRO NISAR / OPERA DISP-NI](https://www.jpl.nasa.gov/go/opera/products/disp-product-suite/) | Availability to verify before intake | Check validated product coverage and compatibility when available. |
-| Disposal and injection wells | On disk | [Texas RRC; NM OCD for expansion](https://www.rrc.texas.gov/resource-center/research/data-sets-available-for-download/) | HeavenWatch Crane County subset first | Audit IDs, zone classification, source dates, and coordinates. |
-| Reported injection history | On disk | [Texas RRC H-10 / injection reporting](https://www.rrc.texas.gov/oil-and-gas/publications-and-notices/online-research-queries/) | HeavenWatch historical subset | Join to audited well IDs and expose reporting period. |
+| Disposal and injection wells | Available | [Texas RRC; NM OCD for expansion](https://www.rrc.texas.gov/resource-center/research/data-sets-available-for-download/) | HeavenWatch Crane County subset first | Audit IDs, zone classification, source dates, and coordinates. |
+| Reported injection history | Available | [Texas RRC H-10 / injection reporting](https://www.rrc.texas.gov/oil-and-gas/publications-and-notices/online-research-queries/) | HeavenWatch historical subset | Join to audited well IDs and expose reporting period. |
 | Wellbores, inactive and orphan wells | On disk | [Texas RRC Full Wellbore, IWAR and orphan-well records](https://www.rrc.texas.gov/resource-center/research/data-sets-available-for-download/) | Texas; imported subsets need audit | Reconcile effective dates and coordinate completeness. |
 | Drilling permits and activity | On disk | [Texas RRC W-1; NM OCD permits](https://www.rrc.texas.gov/resource-center/research/data-sets-available-for-download/) | Texas / New Mexico | Export HeavenWatch W-1 subset and retain amendment dates. |
 | Oil, gas and produced-water history | Planned | [NM OCD C-115; Texas RRC production and well tests](https://www.emnrd.nm.gov/ocd/) | Source-dependent well / lease / operator grain | Define grain and crosswalks before mapping totals. |
@@ -71,3 +71,11 @@ Generated data lives in ignored public/reference-data/heavenwatch, is copied int
 ## UI
 
 Open DATA LAYERS → LIBRARY. Search the source roadmap, inspect a layer, and use View ground movement on map. This switches from Google photoreal meshes to satellite terrain so the imagery overlay is visible. The map legend provides variant, opacity, signed units and click-to-sample controls. The Library's Check NASA button reports available acquisitions separately from the displayed period.
+
+## Disposal wells and injection pilot — 2026-09-20
+
+Added 160 disposal wells and 5,685 archived monthly records for 72 wells, January 2016 through July 2025, from HeavenWatch validation_b/rrc. This is a historical local subset; source retrieval time is unavailable in the artifacts. API-14-like keys are synthetic and are labeled as such. UIC identifiers are retained. Duplicate well/month and orphan-join checks passed; volume values were finite and nonnegative. There are 90 shallow, 69 deep, and one unclassified well in the existing interpretation.
+
+The exporter retains source hashes and flags: disposal types 1/2, no waterflood type 3, pressure-zero ambiguity, clipped trailing zero months, possible upstream blank-to-zero conversion, and approximate NAD83/WGS84 location handling. No recent-operation, causal, or capacity inference is made. An archived zero is labeled separately from a month with no record.
+
+Run `/Users/brian/upsoft/heavenwatch/.venv/bin/python scripts/export-injection.py --source /Users/brian/upsoft/heavenwatch` before building a fresh checkout. Output is ignored `public/reference-data/heavenwatch/injection.json`, served behind the existing login. The Library's disposal-well and injection-history entries open the same linked layer. The panel offers month selection, a well selector, click-to-inspect markers, and monthly volume/pressure tables. Monthly totals identify the reporting subset and are not regional production totals.

@@ -1,7 +1,7 @@
 import * as Cesium from 'cesium';
 import { REFERENCE_CATALOG } from './catalog.js';
 
-export function mountReferenceLibrary({viewer, dataManager, layer}) {
+export function mountReferenceLibrary({viewer, dataManager, layer, catalog}) {
   const trigger = document.getElementById('open-reference-library');
   if (!trigger || !layer) return () => {};
   const dialog = document.createElement('dialog');
@@ -61,6 +61,24 @@ export function mountReferenceLibrary({viewer, dataManager, layer}) {
     detail.append(dl);
     const link = el('a', 'Open source documentation ↗'); link.href = item.url; link.target = '_blank'; link.rel = 'noopener noreferrer'; detail.append(link);
     if (!item.layerId) {detail.append(el('p', item.status === 'On disk' ? 'Source artifacts exist in HeavenWatch. They still need an import and quality review before they can be displayed here.' : 'Roadmap item — this layer is not connected yet.', 'ref-note')); return;}
+    if (item.layerId === 'injection-wells') {
+      const wellsLayer = catalog.get('injection-wells');
+      const status = el('p', 'Loading well archive…', 'ref-note'); detail.append(status);
+      try {
+        const data = await wellsLayer.readData();
+        if (disposed || selection !== intent) return;
+        status.textContent = `${data.wellCount} wells · ${data.historyWellCount} with history · ${data.recordCount.toLocaleString()} records · ${data.period.join(' → ')}`;
+        const view = el('button', 'View disposal wells & history', 'ref-primary');
+        view.addEventListener('click', async () => {
+          view.disabled = true;
+          try {await dataManager.setEnabled(item.layerId, true, {origin: 'user'}); if (!dataManager.isEnabled(item.layerId)) throw new Error('Well layer could not be enabled'); await wellsLayer.flyTo(); dialog.close();}
+          catch (error) {status.textContent = error.message;} finally {view.disabled = false;}
+        }); detail.append(view, el('p', 'Choose a reporting month, then click a marker or select an API-8 to inspect history. You can display these wells together with ground movement.', 'ref-note'));
+        const limitations = document.createElement('ul'); for (const note of data.limitations) limitations.append(el('li', note)); detail.append(limitations);
+        for (const source of data.sources) {const a = el('a', source.name + ' ↗'); a.href = source.url; a.target = '_blank'; a.rel = 'noopener'; detail.append(a, document.createElement('br'));}
+      } catch (error) {if (selection === intent) status.textContent = error.message;}
+      return;
+    }
     const status = el('p', 'Loading snapshot…', 'ref-note'); detail.append(status);
     try {
       const m = await layer.readManifest();
