@@ -975,3 +975,118 @@ body.landman-mode #cctv-sync-chip {
 #pipeline-panel .pp-table-scroll {
   overflow-x: auto;
 }
+
+/* Active map interpretation remains visible outside the inspector. */
+.lm-map-legend {
+  position: absolute;
+  left: 352px;
+  bottom: 62px;
+  width: 290px;
+  max-height: min(48vh, 440px);
+  overflow: auto;
+  background: #132125f5;
+  border: 1px solid #52686d;
+  border-radius: 9px;
+  padding: 10px 12px;
+  pointer-events: auto;
+  box-shadow: 0 3px 16px #0005;
+}
+.lm-map-legend summary {
+  cursor: pointer;
+  font-weight: 650;
+  padding: 5px 0;
+}
+.lm-map-legend section {
+  border-top: 1px solid #304246;
+  padding: 9px 0;
+}
+.lm-map-legend small {
+  display: block;
+  color: #bdcecd;
+  font-size: 11px;
+}
+.lm-map-legend p {
+  margin: 6px 0;
+  font-size: 12px;
+}
+#landman-workspace .lm-map-legend button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  text-align: left;
+  padding: 5px 0;
+  background: none;
+  border: none;
+}
+.lm-map-legend img {
+  width: 22px;
+  height: 22px;
+}
+.lm-legend-ramp {
+  height: 10px;
+  margin: 8px 0 3px;
+  background: linear-gradient(90deg, #278ec4, #ebe7cb, #d74e2b);
+  border: 1px solid #c2c8c9;
+}
+.lm-map-legend label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.lm-map-legend input {
+  min-width: 0;
+  width: 130px;
+}
+.lm-layer-row {
+  grid-template-columns: 42px 1fr;
+}
+#landman-workspace .lm-layer-toggle {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  padding: 13px 6px;
+}
+.lm-layer-toggle[aria-checked='true']:after {
+  transform: translateX(14px);
+}
+#landman-workspace .lm-layer-zoom {
+  grid-column: 2;
+  justify-self: start;
+  background: none;
+  border: none;
+  padding: 5px 0;
+  font-size: 11px;
+  text-decoration: underline;
+  color: #c0d9e0;
+}
+#landman-workspace summary:focus-visible,
+#landman-workspace select:focus-visible {
+  outline: 2px solid #e6bd76;
+  outline-offset: 2px;
+}
+@media (max-width: 1100px) {
+  .has-inspector .lm-map-legend {
+    width: 220px;
+    max-height: 30vh;
+  }
+}
+@media (max-width: 760px) {
+  .lm-map-legend,
+  .has-inspector .lm-map-legend {
+    left: auto;
+    right: 10px;
+    bottom: 65px;
+    width: 230px;
+    max-height: 28vh;
+  }
+  #landman-workspace:not(.layers-collapsed) .lm-map-legend {
+    bottom: 12px;
+    max-height: 20vh;
+  }
+}
+
+#landman-workspace .lm-inspector-content > .lm-inspector-notice:not([hidden]) {
+  display: block !important;
+}

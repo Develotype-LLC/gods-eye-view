@@ -64,7 +64,7 @@ export const LANDMAN_LAYERS = [
     name: 'Geological basins',
     source: 'USGS · national boundaries',
     tag: 'National',
-    color: '#e6b96b',
+    color: '#a8b9c3',
     inspector: 'basins-panel',
   },
   {
@@ -91,7 +91,7 @@ export const LANDMAN_LAYERS = [
     name: 'Land ownership',
     source: 'TxGIO · county appraisal snapshots',
     tag: 'Parcels',
-    color: '#d8be7a',
+    color: '#c1c6c9',
     inspector: 'land-panel',
   },
   {

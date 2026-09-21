@@ -1,3 +1,5 @@
+import { mountSurfacePolicy } from './surfacePolicy.js';
+import { mountMapLegend } from './mapLegend.js';
 import { mountOwnerWorkspace } from './ownerWorkspace.js';
 import { mountLocationInvestigation } from './locationInvestigation.js';
 import { mountPipelinePlanner } from './pipelinePlanner.js';
@@ -36,6 +38,7 @@ export function mountLandmanWorkspace({
     busy = false,
     disposed = false,
     currentInspector = null,
+    currentItem = null,
     visualBefore = null,
     otherLayers = [],
     preference = null,
@@ -58,7 +61,7 @@ export function mountLandmanWorkspace({
   root.hidden = true;
   root.innerHTML = `<header class="lm-topbar"><div class="lm-brand"><img src="/logo.svg" alt=""><div><strong>LANDMAN’S <em>Eye</em></strong><span>WELLS · WATER · LAND</span></div></div><nav aria-label="Workspace view"><button data-mode="landman" aria-pressed="true">Landman</button><button data-mode="console" aria-pressed="false">Full console ↗</button></nav><div class="lm-top-actions"><button data-region="texas">Texas</button><button data-region="permian">Permian</button><button data-region="us">US basins</button><button data-tilt>2D / 3D tilt</button><button data-mobile-layers aria-expanded="true">Layers</button></div></header>
  <aside class="lm-sidebar" aria-label="Landman layers"><div class="lm-sidebar-heading"><div><small>YOUR WORKSPACE</small><h2>Explore the basin</h2></div><span data-active-count>0 on</span></div>
- <div class="lm-view-picks" aria-label="Landman task views"></div><p class="lm-view-description" data-view-description>Start with a view, then choose the layers you need.</p>
+ <div class="lm-view-picks" aria-label="Landman task views"></div><p class="lm-view-description" data-view-description>Views replace visible layers and zoom to their coverage.</p>
  <button class="lm-compare-button" data-pipeline>LONG-Haul · pipeline routing</button>
  <button class="lm-compare-button" data-owners>Owners & relationships</button>
  <button class="lm-compare-button" data-locations>Compare locations · A → B</button>
@@ -78,7 +81,7 @@ export function mountLandmanWorkspace({
       root
         .querySelector(selector)
         .addEventListener(type, fn, { signal: abort.signal });
-  let investigation, pipeline;
+  let investigation, pipeline, legend;
   const status = root.querySelector('.lm-status'),
     list = root.querySelector('.lm-layer-list'),
     inspector = root.querySelector('.lm-inspector'),
@@ -137,6 +140,7 @@ export function mountLandmanWorkspace({
     }
   }
   function setInspector(item, { select = true } = {}) {
+    currentItem = item;
     currentInspector = item
       ? item.dataset
         ? 'records-panel'
@@ -148,17 +152,46 @@ export function mountLandmanWorkspace({
     root.dataset.inspector = currentInspector || '';
     inspector.hidden = !currentInspector;
     root.classList.toggle('has-inspector', !!currentInspector);
+    updateInspectorNotice();
     if (item) {
       root.querySelector('[data-inspector-title]').textContent = item.name;
       if (item.dataset && select) records.select(item.id);
     }
+  }
+  function updateInspectorNotice() {
+    let notice = content.querySelector('.lm-inspector-notice');
+    if (!notice) {
+      notice = element('div');
+      notice.className = 'lm-inspector-notice';
+      content.prepend(notice);
+    }
+    const item = LANDMAN_LAYERS.find((l) => l.id === currentItem?.id);
+    notice.hidden = !item || enabled(item);
+    if (notice.hidden) return;
+    notice.replaceChildren(
+      element('p', item.source + ' · ' + item.tag),
+      element(
+        'p',
+        'This layer is off. Show it to load its controls and records without moving the map.',
+      ),
+    );
+    const button = element('button', 'Show ' + item.name);
+    button.disabled = busy;
+    button.addEventListener(
+      'click',
+      () => void action(() => setLayer(item, true)),
+    );
+    notice.append(button);
   }
   function render() {
     if (disposed) return;
     dockPanels();
     root.querySelector('[data-active-count]').textContent =
       LANDMAN_LAYERS.filter(enabled).length + ' on';
+    updateInspectorNotice();
+    legend?.render();
     const filtered = filterLandmanLayers(search, activeOnly, enabled);
+    const groupName = (item) => (enabled(item) ? 'Active layers' : item.group);
     const signature = JSON.stringify([
       search,
       activeOnly,
@@ -168,11 +201,13 @@ export function mountLandmanWorkspace({
     if (list.dataset.signature !== signature) {
       list.dataset.signature = signature;
       list.replaceChildren();
-      for (const group of [...new Set(filtered.map((l) => l.group))]) {
+      for (const group of [...new Set(filtered.map(groupName))].sort(
+        (a, b) => Number(b === 'Active layers') - Number(a === 'Active layers'),
+      )) {
         const section = element('section');
         section.className = 'lm-group';
         section.append(element('h3', group));
-        for (const item of filtered.filter((l) => l.group === group)) {
+        for (const item of filtered.filter((l) => groupName(l) === group)) {
           const row = element('div');
           row.className = 'lm-layer-row' + (enabled(item) ? ' is-on' : '');
           const toggle = element('button');
@@ -192,7 +227,7 @@ export function mountLandmanWorkspace({
           );
           const info = element('button');
           info.className = 'lm-layer-info';
-          info.setAttribute('aria-label', 'Explore ' + item.name);
+          info.setAttribute('aria-label', 'Details for ' + item.name);
           info.append(
             element('strong', item.name),
             element('small', item.source),
@@ -202,15 +237,25 @@ export function mountLandmanWorkspace({
             'click',
             () =>
               void action(async () => {
-                await setLayer(item, true);
                 setInspector(item);
-                if (item.dataset) records.flyTo(item.id);
-                else catalog.get(item.id).flyTo?.();
               }),
           );
           const tag = element('span', item.tag);
           tag.className = 'lm-layer-tag';
-          row.append(toggle, info, tag);
+          const zoom = element('button', 'Zoom to coverage');
+          zoom.className = 'lm-layer-zoom';
+          zoom.setAttribute('aria-label', 'Zoom to ' + item.name + ' coverage');
+          zoom.disabled = busy;
+          zoom.addEventListener(
+            'click',
+            () =>
+              void action(async () => {
+                await setLayer(item, true);
+                if (item.dataset) records.flyTo(item.id);
+                else catalog.get(item.id).flyTo?.();
+              }),
+          );
+          row.append(toggle, info, tag, zoom);
           section.append(row);
         }
         list.append(section);
@@ -285,6 +330,13 @@ export function mountLandmanWorkspace({
         scope: { enabled: false },
       });
       landman = true;
+      if (
+        dataManager.isEnabled('ground-motion') &&
+        dataManager.isEnabled('terrain-difference')
+      )
+        await dataManager.setEnabled('terrain-difference', false, {
+          origin: 'programmatic',
+        });
       document.body.classList.add('landman-mode');
       root.hidden = false;
       launcher.hidden = true;
@@ -426,6 +478,13 @@ export function mountLandmanWorkspace({
   let previousDetail = null,
     previousArchive = null,
     previousTexas = null;
+  legend = mountMapLegend({ root, catalog, enabled, inspect: setInspector });
+  // Guard all entry points, including the source library and location tools.
+  const offSurfaceGuard = mountSurfacePolicy(
+    dataManager,
+    () => landman,
+    (e) => message(e.message),
+  );
   const offActivity = dataManager.subscribeActivity(render),
     offRecords = records.subscribe(() => {
       const state = records.getState();
@@ -448,6 +507,7 @@ export function mountLandmanWorkspace({
       render();
     });
   const offTexas = catalog.get('texas-wells').subscribe(() => {
+    legend?.render();
     const detail = catalog.get('texas-wells').getState().detail;
     if (landman && detail && detail !== previousTexas)
       setInspector(LANDMAN_LAYERS[0]);
@@ -472,6 +532,8 @@ export function mountLandmanWorkspace({
     pipeline.destroy();
     ownerWorkspace.destroy();
     abort.abort();
+    offSurfaceGuard();
+    legend.destroy();
     offActivity();
     offRecords();
     offTexas();

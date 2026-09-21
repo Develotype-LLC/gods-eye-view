@@ -118,7 +118,7 @@ export function createLandLayer() {
       result = data;
       source.entities.removeAll();
       picks.clear();
-      const color = Cesium.Color.fromCssColorString('#d8be7a');
+      const color = Cesium.Color.fromCssColorString('#c1c6c9');
       if (data.mode === 'clusters')
         for (const [i, f] of data.features.entries()) {
           const id = 'land:cluster:' + i;
@@ -162,7 +162,7 @@ export function createLandLayer() {
                   Cesium.Cartesian3.fromDegreesArray(rings[0].flat()),
                   rings.slice(1).map(ring),
                 ),
-                material: color.withAlpha(0.22),
+                material: color.withAlpha(0.06),
                 classificationType: Cesium.ClassificationType.BOTH,
               },
             });
