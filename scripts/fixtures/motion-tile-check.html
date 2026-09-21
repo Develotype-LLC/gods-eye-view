@@ -1,0 +1,82 @@
+<!doctype html><title>Ground movement orientation regression</title>
+<h1>Ground movement tile checks</h1>
+<pre id="result">Running…</pre>
+<script type="module">
+  import { ImageryProvider } from 'cesium';
+  import { recolorMotionTile } from '/src/reference/motionTile.js';
+  import { divergingColor } from '/src/reference/locationModel.js';
+  const report = [];
+  try {
+    const original = document.createElement('canvas');
+    original.width = 4;
+    original.height = 4;
+    const ctx = original.getContext('2d'),
+      pixels = ctx.createImageData(4, 4);
+    for (let y = 0; y < 4; y++)
+      for (let x = 0; x < 4; x++)
+        pixels.data.set([y * 64 + x * 8, 0, 0, 255], (y * 4 + x) * 4);
+    pixels.data[3] = 0;
+    ctx.putImageData(pixels, 0, 0);
+    const url = original.toDataURL();
+    const bitmap = await ImageryProvider.loadImage(undefined, url);
+    const html = new Image();
+    html.src = url;
+    await html.decode();
+    for (const [name, input] of [
+      ['Cesium loader ' + bitmap.constructor.name, bitmap],
+      ['HTML image fallback', html],
+    ]) {
+      const output = recolorMotionTile(input)
+        .getContext('2d')
+        .getImageData(0, 0, 4, 4).data;
+      for (let i = 0; i < 16; i++) {
+        if (output[i * 4 + 3] !== pixels.data[i * 4 + 3])
+          throw Error(name + ' alpha changed');
+        if (!pixels.data[i * 4 + 3]) continue;
+        const expected = divergingColor(
+          (pixels.data[i * 4] / 255) * 60 - 30,
+          30,
+        );
+        for (let channel = 0; channel < 3; channel++)
+          if (output[i * 4 + channel] !== expected[channel])
+            throw Error(name + ' wrong pixel row/column ' + i);
+      }
+      report.push(
+        'PASS: ' +
+          name +
+          ' preserves geographic row/column positions and no-data alpha',
+      );
+    }
+    // A child's top-left samples must retain their positions within the parent footprint.
+    for (const [x, y] of [
+      [0, 0],
+      [2, 0],
+      [0, 2],
+      [2, 2],
+    ]) {
+      const child = document.createElement('canvas');
+      child.width = 2;
+      child.height = 2;
+      child.getContext('2d').drawImage(original, x, y, 2, 2, 0, 0, 2, 2);
+      const decoded = await ImageryProvider.loadImage(
+        undefined,
+        child.toDataURL(),
+      );
+      const actual = recolorMotionTile(decoded)
+        .getContext('2d')
+        .getImageData(0, 0, 2, 2).data;
+      const expected = recolorMotionTile(original)
+        .getContext('2d')
+        .getImageData(x, y, 2, 2).data;
+      if (actual.some((v, i) => v !== expected[i]))
+        throw Error('Parent/child orientation mismatch');
+    }
+    report.push(
+      'PASS: all four child tiles align with parent across zoom transition',
+    );
+    document.getElementById('result').textContent = report.join('\n');
+  } catch (error) {
+    document.getElementById('result').textContent =
+      report.join('\n') + '\nFAIL: ' + error.stack;
+  }
+</script>

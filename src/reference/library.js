@@ -1,8 +1,8 @@
-import {mountMotionHistoryPanel} from './motionHistoryPanel.js';
+import { mountMotionHistoryPanel } from './motionHistoryPanel.js';
 import * as Cesium from 'cesium';
 import { REFERENCE_CATALOG } from './catalog.js';
 
-export function mountReferenceLibrary({viewer, dataManager, layer, catalog}) {
+export function mountReferenceLibrary({ viewer, dataManager, layer, catalog }) {
   const trigger = document.getElementById('open-reference-library');
   if (!trigger || !layer) return () => {};
   const dialog = document.createElement('dialog');
@@ -13,124 +13,357 @@ export function mountReferenceLibrary({viewer, dataManager, layer, catalog}) {
     <div class="ref-workspace"><aside><label>Find a layer<input type="search" placeholder="Search sources or layers…"></label><nav aria-label="Reference layer catalog"></nav></aside><section class="ref-detail"></section></div>`;
   document.body.append(dialog);
   const legend = document.createElement('section');
-  legend.id = 'ground-motion-legend'; legend.hidden = true;
+  legend.id = 'ground-motion-legend';
+  legend.hidden = true;
   legend.setAttribute('aria-label', 'Ground movement legend');
-  legend.innerHTML = `<header><strong>GROUND MOVEMENT</strong><button data-hide aria-label="Hide ground movement">✕</button></header><small data-motion-heading>NASA OPERA / ASF · long-term LOS velocity</small><label>Measurement<select data-variant><option value="displacement">Full displacement</option><option value="short_wavelength_displacement">Short wavelength</option></select></label><div class="ref-colorbar"></div><div class="ref-scale"><span>−30 · away</span><span>0</span><span>+30 · toward</span></div><small>mm/year · relative to satellite · colors saturate</small><label>Opacity<input data-opacity type="range" min="0" max="1" step="0.05" value="0.7"></label><p data-sample role="status">Click inside the colored area to sample a pixel.</p><button data-library>Sources & layer library</button>`;
+  legend.innerHTML = `<header><strong>GROUND MOVEMENT</strong><button data-hide aria-label="Hide ground movement">✕</button></header><small data-motion-heading>NASA OPERA / ASF · long-term LOS velocity</small><label>Measurement<select data-variant><option value="displacement">Full displacement</option><option value="short_wavelength_displacement">Short wavelength</option></select></label><div class="ref-colorbar"></div><div class="ref-scale"><span>−30 · away</span><span>0</span><span>+30 · toward</span></div><small>mm/year · relative to satellite · colors saturate</small><label>Opacity<input data-opacity type="range" min="0" max="1" step="0.05" value="0.7"></label><div class="motion-regions"><button data-pick-motion aria-pressed="true">Pause map picking</button></div><div data-motion-reference hidden><button data-set-motion-reference>Set movement reference on map</button><button data-clear-motion-reference>Clear movement reference</button><p data-motion-reference-status>Absolute velocity · no reference selected.</p></div><p data-sample role="status">Click inside the colored area to sample a pixel.</p><button data-library>Sources & layer library</button>`;
   document.body.append(legend);
   const historyPanel = mountMotionHistoryPanel(legend, layer);
-  const detail = dialog.querySelector('.ref-detail'), nav = dialog.querySelector('nav');
+  const detail = dialog.querySelector('.ref-detail'),
+    nav = dialog.querySelector('nav');
   const sample = legend.querySelector('[data-sample]');
-  let selected = 'texas-wells', disposed = false, selection = 0, sampleIntent = 0;
+  let selected = 'texas-wells',
+    disposed = false,
+    selection = 0,
+    sampleIntent = 0;
+  let motionPicking = true,
+    pickingReference = false;
   const abort = new AbortController();
-  const on = (el, type, fn) => el.addEventListener(type, fn, {signal: abort.signal});
-  const el = (tag, text, className) => {const node = document.createElement(tag); node.textContent = text; if (className) node.className = className; return node;};
-  const open = () => {if (!dialog.open) dialog.showModal();};
-  on(trigger, 'click', event => {event.stopPropagation(); open();});
+  const on = (el, type, fn) =>
+    el.addEventListener(type, fn, { signal: abort.signal });
+  const el = (tag, text, className) => {
+    const node = document.createElement(tag);
+    node.textContent = text;
+    if (className) node.className = className;
+    return node;
+  };
+  const open = () => {
+    if (!dialog.open) dialog.showModal();
+  };
+  on(trigger, 'click', (event) => {
+    event.stopPropagation();
+    open();
+  });
   on(dialog.querySelector('[data-close]'), 'click', () => dialog.close());
   on(dialog, 'close', () => trigger.focus());
   on(legend.querySelector('[data-library]'), 'click', open);
-  on(legend.querySelector('[data-hide]'), 'click', () => dataManager.setEnabled('ground-motion', false, {origin: 'user'}).catch(error => {sample.textContent = error.message;}));
-  on(legend.querySelector('[data-variant]'), 'change', async event => {
-    sampleIntent++; sample.textContent = 'Click to sample this measurement.';
-    try {await layer.setVariant(event.target.value);} catch (error) {sample.textContent = error.message; sync();}
+  on(legend.querySelector('[data-hide]'), 'click', () =>
+    dataManager
+      .setEnabled('ground-motion', false, { origin: 'user' })
+      .catch((error) => {
+        sample.textContent = error.message;
+      }),
+  );
+  on(legend.querySelector('[data-variant]'), 'change', async (event) => {
+    sampleIntent++;
+    sample.textContent = 'Click to sample this measurement.';
+    try {
+      await layer.setVariant(event.target.value);
+    } catch (error) {
+      sample.textContent = error.message;
+      sync();
+    }
   });
-  on(legend.querySelector('[data-opacity]'), 'input', event => layer.setOpacity(Number(event.target.value)));
+  on(legend.querySelector('[data-opacity]'), 'input', (event) =>
+    layer.setOpacity(Number(event.target.value)),
+  );
+  on(legend.querySelector('[data-pick-motion]'), 'click', () => {
+    motionPicking = !motionPicking;
+    pickingReference = false;
+    sync();
+  });
+  on(legend.querySelector('[data-set-motion-reference]'), 'click', () => {
+    motionPicking = true;
+    pickingReference = true;
+    sample.textContent =
+      'Click a valid archive pixel to set the ground-movement reference.';
+    sync();
+  });
+  on(
+    legend.querySelector('[data-clear-motion-reference]'),
+    'click',
+    async () => {
+      pickingReference = false;
+      try {
+        await layer.setReference(null);
+      } catch (error) {
+        sample.textContent = error.message;
+      }
+    },
+  );
   function sync() {
     const state = layer.getState();
+    if (state.coverage === 'us') pickingReference = false;
+    legend.querySelector('[data-motion-reference]').hidden =
+      state.coverage !== 'crane';
+    legend.querySelector('[data-pick-motion]').textContent = motionPicking
+      ? 'Pause map picking'
+      : 'Inspect location on map';
+    legend
+      .querySelector('[data-pick-motion]')
+      .setAttribute('aria-pressed', String(motionPicking));
+    legend.querySelector('[data-motion-reference-status]').textContent =
+      state.reference
+        ? `Movement reference: ${state.reference.latitude.toFixed(5)}, ${state.reference.longitude.toFixed(5)} · independent of terrain comparison`
+        : 'Absolute velocity · no reference selected.';
     legend.hidden = !dataManager.isEnabled('ground-motion');
-    legend.querySelector('[data-motion-heading]').textContent=state.coverage==='us'?'NASA OPERA / ASF · US velocity overview · dates vary by frame':'Crane archive · 2016-08-01 → 2025-12-30';
-    const relative=state.coverage==='crane'&&state.reference;
-    legend.querySelector('.ref-colorbar').style.background=state.coverage==='us'||relative?'linear-gradient(90deg,#278ec4,#ebe7cb,#d74e2b)':'';
-    legend.querySelector('.ref-scale').innerHTML=relative?'<span>−30 · below A rate</span><span>0</span><span>+30 · above A rate</span>':'<span>−30 · away</span><span>0</span><span>+30 · toward</span>';
-    if(state.error)sample.textContent=state.error;
+    legend.querySelector('[data-motion-heading]').textContent =
+      state.coverage === 'us'
+        ? 'NASA OPERA / ASF · US velocity overview · dates vary by frame'
+        : 'Crane archive · 2016-08-01 → 2025-12-30';
+    const relative = state.coverage === 'crane' && state.reference;
+    legend.querySelector('.ref-colorbar').style.background =
+      state.coverage === 'us' || relative
+        ? 'linear-gradient(90deg,#278ec4,#ebe7cb,#d74e2b)'
+        : '';
+    legend.querySelector('.ref-scale').innerHTML = relative
+      ? '<span>−30 · below reference rate</span><span>0</span><span>+30 · above reference rate</span>'
+      : '<span>−30 · away</span><span>0</span><span>+30 · toward</span>';
+    if (state.error) sample.textContent = state.error;
     legend.querySelector('[data-variant]').value = state.variantId;
     legend.querySelector('[data-opacity]').value = state.opacity;
   }
-  const unsubscribe = layer.subscribe(sync), unactivity = dataManager.subscribeActivity(sync);
+  const unsubscribe = layer.subscribe(sync),
+    unactivity = dataManager.subscribeActivity(sync);
   function list() {
     nav.replaceChildren();
-    const query = dialog.querySelector('input[type=search]').value.toLowerCase();
-    const entries = REFERENCE_CATALOG.filter(item => Object.values(item).join(' ').toLowerCase().includes(query));
+    const query = dialog
+      .querySelector('input[type=search]')
+      .value.toLowerCase();
+    const entries = REFERENCE_CATALOG.filter((item) =>
+      Object.values(item).join(' ').toLowerCase().includes(query),
+    );
     for (const item of entries) {
-      const button = el('button', ''); button.className = item.id === selected ? 'selected' : '';
+      const button = el('button', '');
+      button.className = item.id === selected ? 'selected' : '';
       button.setAttribute('aria-pressed', String(item.id === selected));
-      button.append(el('strong', item.name), el('small', `${item.group} · ${item.status}`));
-      button.addEventListener('click', () => {selected = item.id; list(); void showDetail(item);}); nav.append(button);
+      button.append(
+        el('strong', item.name),
+        el('small', `${item.group} · ${item.status}`),
+      );
+      button.addEventListener('click', () => {
+        selected = item.id;
+        list();
+        void showDetail(item);
+      });
+      nav.append(button);
     }
     if (!entries.length) nav.append(el('p', 'No matching layers.'));
   }
   on(dialog.querySelector('input[type=search]'), 'input', list);
-  function reveal(item) {dialog.close();document.dispatchEvent(new CustomEvent('landman:inspect',{detail:{layerId:item.layerId,datasetId:item.datasetId,name:item.name}}));}
+  function reveal(item) {
+    dialog.close();
+    document.dispatchEvent(
+      new CustomEvent('landman:inspect', {
+        detail: {
+          layerId: item.layerId,
+          datasetId: item.datasetId,
+          name: item.name,
+        },
+      }),
+    );
+  }
   async function showDetail(item) {
     const intent = ++selection;
-    detail.replaceChildren(el('span', item.status, `ref-badge ${item.layerId ? 'available' : ''}`), el('h3', item.name), el('p', item.note));
+    detail.replaceChildren(
+      el('span', item.status, `ref-badge ${item.layerId ? 'available' : ''}`),
+      el('h3', item.name),
+      el('p', item.note),
+    );
     const dl = document.createElement('dl');
-    for (const [title, value] of [['Source', item.source], ['Coverage', item.coverage], ['Data', item.format], ['Next step', item.next]]) dl.append(el('dt', title), el('dd', value));
+    for (const [title, value] of [
+      ['Source', item.source],
+      ['Coverage', item.coverage],
+      ['Data', item.format],
+      ['Next step', item.next],
+    ])
+      dl.append(el('dt', title), el('dd', value));
     detail.append(dl);
-    const link = el('a', 'Open source documentation ↗'); link.href = item.url; link.target = '_blank'; link.rel = 'noopener noreferrer'; detail.append(link);
-    if (!item.layerId) {detail.append(el('p', item.status === 'On disk' ? 'Source artifacts exist in HeavenWatch. They still need an import and quality review before they can be displayed here.' : 'Roadmap item — this layer is not connected yet.', 'ref-note')); return;}
+    const link = el('a', 'Open source documentation ↗');
+    link.href = item.url;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    detail.append(link);
+    if (!item.layerId) {
+      detail.append(
+        el(
+          'p',
+          item.status === 'On disk'
+            ? 'Source artifacts exist in HeavenWatch. They still need an import and quality review before they can be displayed here.'
+            : 'Roadmap item — this layer is not connected yet.',
+          'ref-note',
+        ),
+      );
+      return;
+    }
     if (item.layerId === 'reference-records') {
-      const status = el('p', 'Local dataset with retained source records and reporting periods.', 'ref-note');
+      const status = el(
+        'p',
+        'Local dataset with retained source records and reporting periods.',
+        'ref-note',
+      );
       const view = el('button', 'Open collection', 'ref-primary');
       view.addEventListener('click', async () => {
         view.disabled = true;
         try {
-          if (!dataManager.isEnabled('reference-records')) catalog.get('reference-records').select(item.datasetId);
-          await dataManager.setEnabled('reference-records', true, {origin: 'user'});
-          if (!dataManager.isEnabled('reference-records')) throw new Error('Reference collection could not be enabled');
-          await catalog.get('reference-records').showDataset(item.datasetId); reveal(item);
-        } catch (error) {status.textContent = error.message;} finally {view.disabled = false;}
+          if (!dataManager.isEnabled('reference-records'))
+            catalog.get('reference-records').select(item.datasetId);
+          await dataManager.setEnabled('reference-records', true, {
+            origin: 'user',
+          });
+          if (!dataManager.isEnabled('reference-records'))
+            throw new Error('Reference collection could not be enabled');
+          await catalog.get('reference-records').showDataset(item.datasetId);
+          reveal(item);
+        } catch (error) {
+          status.textContent = error.message;
+        } finally {
+          view.disabled = false;
+        }
       });
-      detail.append(status, view); return;
+      detail.append(status, view);
+      return;
     }
     if (item.layerId === 'us-basins') {
-      const status = el('p', 'USGS boundary snapshot · 144 source polygons · retrieved September 2026', 'ref-note');
+      const status = el(
+        'p',
+        'USGS boundary snapshot · 144 source polygons · retrieved September 2026',
+        'ref-note',
+      );
       const view = el('button', 'View US geological basins', 'ref-primary');
       view.addEventListener('click', async () => {
         view.disabled = true;
         try {
-          await dataManager.setEnabled('us-basins', true, {origin: 'user'});
-          if (!dataManager.isEnabled('us-basins')) throw new Error('Basin layer could not be enabled');
-          catalog.get('us-basins').flyTo(); reveal(item);
-        } catch (error) {status.textContent = error.message;} finally {view.disabled = false;}
+          await dataManager.setEnabled('us-basins', true, { origin: 'user' });
+          if (!dataManager.isEnabled('us-basins'))
+            throw new Error('Basin layer could not be enabled');
+          catalog.get('us-basins').flyTo();
+          reveal(item);
+        } catch (error) {
+          status.textContent = error.message;
+        } finally {
+          view.disabled = false;
+        }
       });
-      detail.append(status, view); return;
+      detail.append(status, view);
+      return;
     }
     if (item.layerId === 'texas-wells') {
       const texasLayer = catalog.get('texas-wells');
-      const status = el('p', 'Reading statewide database…', 'ref-note'); detail.append(status);
+      const status = el('p', 'Reading statewide database…', 'ref-note');
+      detail.append(status);
       try {
-        const data = await texasLayer.readStatus(); if (disposed || selection !== intent) return;
-        status.textContent = data.datasets.map(d => `${d.name === 'gis' ? 'GIS well locations' : 'UIC permits'}: ${Number(d.row_count).toLocaleString()} · imported ${new Date(d.completed_at).toLocaleString()}`).join(' / ');
-        const view = el('button', 'Explore all Texas wells', 'ref-primary'); view.addEventListener('click', async () => {
+        const data = await texasLayer.readStatus();
+        if (disposed || selection !== intent) return;
+        status.textContent = data.datasets
+          .map(
+            (d) =>
+              `${d.name === 'gis' ? 'GIS well locations' : 'UIC permits'}: ${Number(d.row_count).toLocaleString()} · imported ${new Date(d.completed_at).toLocaleString()}`,
+          )
+          .join(' / ');
+        const view = el('button', 'Explore all Texas wells', 'ref-primary');
+        view.addEventListener('click', async () => {
           view.disabled = true;
-          try {await dataManager.setEnabled('injection-wells', false, {origin: 'user'}); await dataManager.setEnabled('texas-wells', true, {origin: 'user'}); if (!dataManager.isEnabled('texas-wells')) throw new Error('Texas layer could not be enabled'); texasLayer.flyTo(); reveal(item);}
-          catch (error) {status.textContent = error.message;} finally {view.disabled = false;}
-        }); detail.append(view, el('p', 'Zoom through clusters, filter RRC GIS classifications, or search a Texas API number. Selecting a well shows its UIC permits. Disposal history is fetched by well and saved in the database; the entire statewide H-10 history is not preloaded.', 'ref-note'));
-        detail.append(el('p', 'Statewide GIS and UIC inventories are complete source snapshots. Records without usable coordinates or valid API numbers remain in the database with their limitations. Oil/gas production history, ownership and leases require separate sources.'));
-      } catch (error) {if (selection === intent) status.textContent = error.message;}
+          try {
+            await dataManager.setEnabled('injection-wells', false, {
+              origin: 'user',
+            });
+            await dataManager.setEnabled('texas-wells', true, {
+              origin: 'user',
+            });
+            if (!dataManager.isEnabled('texas-wells'))
+              throw new Error('Texas layer could not be enabled');
+            texasLayer.flyTo();
+            reveal(item);
+          } catch (error) {
+            status.textContent = error.message;
+          } finally {
+            view.disabled = false;
+          }
+        });
+        detail.append(
+          view,
+          el(
+            'p',
+            'Zoom through clusters, filter RRC GIS classifications, or search a Texas API number. Selecting a well shows its UIC permits. Disposal history is fetched by well and saved in the database; the entire statewide H-10 history is not preloaded.',
+            'ref-note',
+          ),
+        );
+        detail.append(
+          el(
+            'p',
+            'Statewide GIS and UIC inventories are complete source snapshots. Records without usable coordinates or valid API numbers remain in the database with their limitations. Oil/gas production history, ownership and leases require separate sources.',
+          ),
+        );
+      } catch (error) {
+        if (selection === intent) status.textContent = error.message;
+      }
       return;
     }
     if (item.layerId === 'injection-wells') {
       const wellsLayer = catalog.get('injection-wells');
-      const status = el('p', 'Connecting to Texas RRC…', 'ref-note'); detail.append(status);
+      const status = el('p', 'Connecting to Texas RRC…', 'ref-note');
+      detail.append(status);
       try {
         const data = await wellsLayer.readData();
         if (disposed || selection !== intent) return;
         status.textContent = `${data.wellCount} wells · ${data.historyWellCount} with history · ${data.recordCount.toLocaleString()} records · ${data.period.join(' → ')}`;
-        detail.append(el('p', data.connection?.warning || (data.sourceRetrievedAt ? `Texas RRC refreshed ${new Date(data.sourceRetrievedAt).toLocaleString()}. Server cache: up to 6 hours. Reopen the app to load a newer snapshot; refresh is requested when the cache expires.` : 'Historical fallback archive; original retrieval date unavailable.'), 'ref-note'));
-        const view = el('button', 'View disposal wells & history', 'ref-primary');
+        detail.append(
+          el(
+            'p',
+            data.connection?.warning ||
+              (data.sourceRetrievedAt
+                ? `Texas RRC refreshed ${new Date(data.sourceRetrievedAt).toLocaleString()}. Server cache: up to 6 hours. Reopen the app to load a newer snapshot; refresh is requested when the cache expires.`
+                : 'Historical fallback archive; original retrieval date unavailable.'),
+            'ref-note',
+          ),
+        );
+        const view = el(
+          'button',
+          'View disposal wells & history',
+          'ref-primary',
+        );
         view.addEventListener('click', async () => {
           view.disabled = true;
-          try {await dataManager.setEnabled(item.layerId, true, {origin: 'user'}); if (!dataManager.isEnabled(item.layerId)) throw new Error('Well layer could not be enabled'); await wellsLayer.flyTo(); reveal(item);}
-          catch (error) {status.textContent = error.message;} finally {view.disabled = false;}
-        }); detail.append(view, el('p', 'Choose a reporting month, then click a marker or select an API-8 to inspect history. You can display these wells together with ground movement.', 'ref-note'));
-        const limitations = document.createElement('ul'); for (const note of data.limitations) limitations.append(el('li', note)); detail.append(limitations);
-        for (const source of data.sources) {const a = el('a', source.name + ' ↗'); a.href = source.url; a.target = '_blank'; a.rel = 'noopener'; detail.append(a, document.createElement('br'));}
-      } catch (error) {if (selection === intent) status.textContent = error.message;}
+          try {
+            await dataManager.setEnabled(item.layerId, true, {
+              origin: 'user',
+            });
+            if (!dataManager.isEnabled(item.layerId))
+              throw new Error('Well layer could not be enabled');
+            await wellsLayer.flyTo();
+            reveal(item);
+          } catch (error) {
+            status.textContent = error.message;
+          } finally {
+            view.disabled = false;
+          }
+        });
+        detail.append(
+          view,
+          el(
+            'p',
+            'Choose a reporting month, then click a marker or select an API-8 to inspect history. You can display these wells together with ground movement.',
+            'ref-note',
+          ),
+        );
+        const limitations = document.createElement('ul');
+        for (const note of data.limitations) limitations.append(el('li', note));
+        detail.append(limitations);
+        for (const source of data.sources) {
+          const a = el('a', source.name + ' ↗');
+          a.href = source.url;
+          a.target = '_blank';
+          a.rel = 'noopener';
+          detail.append(a, document.createElement('br'));
+        }
+      } catch (error) {
+        if (selection === intent) status.textContent = error.message;
+      }
       return;
     }
-    const status = el('p', 'Loading snapshot…', 'ref-note'); detail.append(status);
+    const status = el('p', 'Loading snapshot…', 'ref-note');
+    detail.append(status);
     try {
       const m = await layer.readManifest();
       if (disposed || selection !== intent) return;
@@ -139,42 +372,146 @@ export function mountReferenceLibrary({viewer, dataManager, layer, catalog}) {
       const view = el('button', 'View ground movement on map', 'ref-primary');
       view.addEventListener('click', async () => {
         view.disabled = true;
-        try {await dataManager.setEnabled(item.layerId, true, {origin: 'user'}); if (!dataManager.isEnabled(item.layerId)) throw new Error('Layer could not be enabled'); await layer.flyTo(); reveal(item); sync();}
-        catch (error) {status.textContent = error.message;} finally {view.disabled = false;}
-      }); detail.append(view, el('p', 'Uses satellite terrain so the raster stays visible. Google 3D remains selectable from the map controls.', 'ref-note'));
-      const nasa = el('button', 'Check NASA for latest acquisition'); nasa.dataset.checkNasa = '';
-      const availability = el('p', 'NASA catalog checks are live; the displayed velocity is a processed historical snapshot.', 'ref-note'); availability.setAttribute('role', 'status');
-      nasa.addEventListener('click', async () => {
-        nasa.disabled = true; availability.textContent = 'Checking NASA Earthdata…';
         try {
-          const response = await fetch('/api/reference/ground-motion/availability', {signal: abort.signal});
-          const data = await response.json(); if (!response.ok) throw new Error(data.error || 'NASA check failed');
+          await dataManager.setEnabled(item.layerId, true, { origin: 'user' });
+          if (!dataManager.isEnabled(item.layerId))
+            throw new Error('Layer could not be enabled');
+          await layer.flyTo();
+          reveal(item);
+          sync();
+        } catch (error) {
+          status.textContent = error.message;
+        } finally {
+          view.disabled = false;
+        }
+      });
+      detail.append(
+        view,
+        el(
+          'p',
+          'Uses satellite terrain so the raster stays visible. Google 3D remains selectable from the map controls.',
+          'ref-note',
+        ),
+      );
+      const nasa = el('button', 'Check NASA for latest acquisition');
+      nasa.dataset.checkNasa = '';
+      const availability = el(
+        'p',
+        'NASA catalog checks are live; the displayed velocity is a processed historical snapshot.',
+        'ref-note',
+      );
+      availability.setAttribute('role', 'status');
+      nasa.addEventListener('click', async () => {
+        nasa.disabled = true;
+        availability.textContent = 'Checking NASA Earthdata…';
+        try {
+          const response = await fetch(
+            '/api/reference/ground-motion/availability',
+            { signal: abort.signal },
+          );
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || 'NASA check failed');
           const latest = data.latest.acquisitionDate.slice(0, 10);
           availability.textContent = `${data.collection} / ${data.frame}: latest acquisition ${latest}. Displayed through ${m.endDate}. ${latest > m.endDate ? 'Newer data is available for processing.' : 'The displayed end date matches or exceeds the catalog result.'} Checked ${new Date(data.checkedAt).toLocaleString()}.`;
-        } catch (error) {availability.textContent = error.message;} finally {nasa.disabled = false;}
-      }); detail.append(nasa, availability);
-      const methods = document.createElement('details'); methods.append(el('summary', 'Method, quality and limitations'), el('p', m.method), el('p', m.quality));
-      const ul = document.createElement('ul'); for (const limit of m.limitations) ul.append(el('li', limit)); methods.append(ul);
-      const manifestLink = el('a', 'Snapshot provenance (JSON)'); manifestLink.href = '/reference-data/heavenwatch/manifest.json'; manifestLink.target = '_blank'; manifestLink.rel = 'noopener'; methods.append(manifestLink); detail.append(methods);
-    } catch (error) {if (selection === intent) status.textContent = error.message;}
+        } catch (error) {
+          availability.textContent = error.message;
+        } finally {
+          nasa.disabled = false;
+        }
+      });
+      detail.append(nasa, availability);
+      const methods = document.createElement('details');
+      methods.append(
+        el('summary', 'Method, quality and limitations'),
+        el('p', m.method),
+        el('p', m.quality),
+      );
+      const ul = document.createElement('ul');
+      for (const limit of m.limitations) ul.append(el('li', limit));
+      methods.append(ul);
+      const manifestLink = el('a', 'Snapshot provenance (JSON)');
+      manifestLink.href = '/reference-data/heavenwatch/manifest.json';
+      manifestLink.target = '_blank';
+      manifestLink.rel = 'noopener';
+      methods.append(manifestLink);
+      detail.append(methods);
+    } catch (error) {
+      if (selection === intent) status.textContent = error.message;
+    }
   }
   const picker = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
-  picker.setInputAction(async event => {
-    if(document.body.dataset.locationPicking)return;
-    if (!dataManager.isEnabled('ground-motion') || dialog.open) return;
+  picker.setInputAction(async (event) => {
+    if (document.body.dataset.locationPicking) return;
+    if (
+      !motionPicking ||
+      !legend.getClientRects().length ||
+      !dataManager.isEnabled('ground-motion') ||
+      dialog.open
+    )
+      return;
     const ray = viewer.camera.getPickRay(event.position);
-    const point = ray && viewer.scene.globe.pick(ray, viewer.scene); if (!point) return;
-    const geo = Cesium.Cartographic.fromCartesian(point), intent = ++sampleIntent;
-    if(layer.getState().coverage==='us'){sample.textContent='Point history shown above.';void historyPanel.inspect(Cesium.Math.toDegrees(geo.longitude),Cesium.Math.toDegrees(geo.latitude));return;}
+    const point = ray && viewer.scene.globe.pick(ray, viewer.scene);
+    if (!point) return;
+    const geo = Cesium.Cartographic.fromCartesian(point),
+      intent = ++sampleIntent;
+    if (layer.getState().coverage === 'us') {
+      sample.textContent = 'Point history shown above.';
+      void historyPanel.inspect(
+        Cesium.Math.toDegrees(geo.longitude),
+        Cesium.Math.toDegrees(geo.latitude),
+      );
+      return;
+    }
+    if (pickingReference) {
+      pickingReference = false;
+      try {
+        await layer.setReference({
+          longitude: Cesium.Math.toDegrees(geo.longitude),
+          latitude: Cesium.Math.toDegrees(geo.latitude),
+        });
+      } catch (error) {
+        sample.textContent = error.message;
+      }
+      return;
+    }
     const variant = layer.getState().variantId;
     sample.textContent = 'Reading pixel…';
     try {
-      const result = await layer.sample(Cesium.Math.toDegrees(geo.longitude), Cesium.Math.toDegrees(geo.latitude));
-      if (disposed || sampleIntent !== intent || variant !== layer.getState().variantId) return;
-      sample.textContent = result.status === 'value' ? `${result.value >= 0 ? '+' : ''}${result.value.toFixed(2)} mm/year LOS · ${result.latitude.toFixed(5)}, ${result.longitude.toFixed(5)}` : result.status === 'no-data' ? 'No valid observation at this pixel. This is not zero motion.' : 'Outside the installed Crane County coverage.';
-      const base=layer.getState().referenceValue;if(result.status==='value'&&Number.isFinite(base))sample.textContent+=` · ${(result.value-base).toFixed(2)} mm/year relative to A`;
-    } catch (error) {if (!disposed && sampleIntent === intent) sample.textContent = error.message;}
+      const result = await layer.sample(
+        Cesium.Math.toDegrees(geo.longitude),
+        Cesium.Math.toDegrees(geo.latitude),
+      );
+      if (
+        disposed ||
+        sampleIntent !== intent ||
+        variant !== layer.getState().variantId
+      )
+        return;
+      sample.textContent =
+        result.status === 'value'
+          ? `${result.value >= 0 ? '+' : ''}${result.value.toFixed(2)} mm/year LOS · ${result.latitude.toFixed(5)}, ${result.longitude.toFixed(5)}`
+          : result.status === 'no-data'
+            ? 'No valid observation at this pixel. This is not zero motion.'
+            : 'Outside the installed Crane County coverage.';
+      const base = layer.getState().referenceValue;
+      if (result.status === 'value' && Number.isFinite(base))
+        sample.textContent += ` · ${(result.value - base).toFixed(2)} mm/year relative to movement reference`;
+    } catch (error) {
+      if (!disposed && sampleIntent === intent)
+        sample.textContent = error.message;
+    }
   }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
-  list(); void showDetail(REFERENCE_CATALOG[0]); sync();
-  return () => {disposed = true; abort.abort(); unsubscribe(); unactivity(); picker.destroy(); historyPanel.destroy(); dialog.remove(); legend.remove();};
+  list();
+  void showDetail(REFERENCE_CATALOG[0]);
+  sync();
+  return () => {
+    disposed = true;
+    abort.abort();
+    unsubscribe();
+    unactivity();
+    picker.destroy();
+    historyPanel.destroy();
+    dialog.remove();
+    legend.remove();
+  };
 }

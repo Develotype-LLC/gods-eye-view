@@ -29,7 +29,6 @@ export function mountLocationInvestigation({
  <div data-comparison></div>
  <label><input data-terrain type="checkbox">Terrain elevation heat map</label><label>Elevation color range<select data-range><option value="25">±25 m</option><option value="100" selected>±100 m</option><option value="500">±500 m</option><option value="2000">±2,000 m</option></select></label>
  <p class="li-ramp"></p><p data-terrain-legend></p>
- <label><input data-motion type="checkbox">Satellite ground-movement heat map</label><label><input data-relative type="checkbox" checked>Show movement rate relative to A</label><p class="li-ramp" data-motion-ramp></p><p data-motion-legend></p>
  <p data-overlap hidden>Both heat maps are on; their colors blend. Turn one off to read its color scale independently.</p>
  <label>Nearby search radius<select data-radius><option value="100">100 m</option><option value="500" selected>500 m</option><option value="1000">1 km</option><option value="5000">5 km</option></select></label>
  <div data-facts></div><p class="li-method">Terrain uses modelled WGS84 ellipsoidal height, not a survey or sea-level datum. Satellite values are historical line-of-sight rates, not vertical terrain heights. Nearby records do not establish ownership, connectivity or causation.</p>`;
@@ -70,6 +69,8 @@ export function mountLocationInvestigation({
     open();
   }
   function stop() {
+    intent++;
+    request?.abort();
     picking = null;
     delete document.body.dataset.locationPicking;
     status('Picking paused. Your comparison remains visible.');
@@ -159,33 +160,15 @@ export function mountLocationInvestigation({
   function sync() {
     panel.querySelector('[data-terrain]').checked =
       dataManager.isEnabled('terrain-difference');
-    panel.querySelector('[data-motion]').checked =
-      dataManager.isEnabled('ground-motion');
-    const t = terrain.getState(),
-      m = motion.getState();
+    const t = terrain.getState();
     panel.querySelector('[data-overlap]').hidden = !(
       dataManager.isEnabled('terrain-difference') &&
       dataManager.isEnabled('ground-motion')
     );
-    panel.querySelector('[data-relative]').disabled = m.coverage === 'us';
-    panel.querySelector('[data-motion-ramp]').style.background = m.coverage === 'us' || m.reference
-      ? 'linear-gradient(90deg,#278ec4,#ebe7cb,#d74e2b)'
-      : 'linear-gradient(90deg,#053061,#4393c3,#d1e5f0,#f7f7f7,#fddbc7,#d6604d,#67001f)';
     panel.querySelector('[data-terrain-legend]').textContent =
       a && Number.isFinite(a.ellipsoid)
         ? `Blue: lower · cream: same height · red: higher than A. Scale −${t.range} to +${t.range} m; extremes saturate. Detail follows terrain mesh resolution.`
         : 'Set point A with a valid terrain height to color the terrain.';
-    panel.querySelector('[data-motion-legend]').textContent =
-      m.error ||
-      (m.coverage === 'us' ? 'US long-term velocity overview · ±30 mm/year. Open Ground movement for date-window point history. Relative-to-A coloring requires the Crane archive.' : m.reference
-        ? `Relative LOS velocity · B minus A · ±30 mm/year. A: ${number(m.referenceValue, 'mm/year')}. Historical 2016–2025 snapshot; not displacement between two selected dates.`
-        : 'Absolute LOS velocity · ±30 mm/year · historical 2016–2025 snapshot.');
-  }
-  async function applyMotion() {
-    await motion.setReference(
-      panel.querySelector('[data-relative]').checked && a ? a : null,
-    );
-    sync();
   }
   function factsCard(title, note) {
     const card = node('section');
@@ -269,9 +252,11 @@ export function mountLocationInvestigation({
               'p',
               d.atB.status === 'value'
                 ? `B LOS velocity: ${number(d.atB.value, 'mm/year')}`
-                : d.atB.status === 'history' ? 'Open Ground movement to read this location’s US time series. The national overview is long-term velocity; A-relative coloring is available in the Crane archive.' : d.atB.status === 'outside'
-                  ? 'B is outside the installed OPERA snapshot.'
-                  : 'B is a no-data pixel.',
+                : d.atB.status === 'history'
+                  ? 'Open Ground movement to read this location’s US time series. The national overview is long-term velocity; A-relative coloring is available in the Crane archive.'
+                  : d.atB.status === 'outside'
+                    ? 'B is outside the installed OPERA snapshot.'
+                    : 'B is a no-data pixel.',
             ),
           );
           if (d.atB.status === 'value' && d.atA?.status === 'value')
@@ -282,7 +267,12 @@ export function mountLocationInvestigation({
               ),
             );
           card.append(
-            node('small', (d.atB.status === 'history' ? 'NASA OPERA / ASF · ' : 'NASA OPERA · 2016–2025 · ') + d.atB.variant),
+            node(
+              'small',
+              (d.atB.status === 'history'
+                ? 'NASA OPERA / ASF · '
+                : 'NASA OPERA · 2016–2025 · ') + d.atB.variant,
+            ),
           );
         },
       );
@@ -435,7 +425,11 @@ export function mountLocationInvestigation({
       facts.append(node('p', 'Turn on layers to include their facts here.'));
     await Promise.all(jobs);
   }
-  async function choose(point, which = picking || (!a ? 'a' : 'b')) {
+  async function choose(
+    point,
+    which = picking || (!a ? 'a' : 'b'),
+    reveal = true,
+  ) {
     const token = ++intent;
     request?.abort();
     request = new AbortController();
@@ -447,12 +441,14 @@ export function mountLocationInvestigation({
       panel.querySelector('[data-facts]').replaceChildren();
     } else {
       b = point;
-      panel.querySelector('[data-facts]').replaceChildren(node('p','Loading facts for '+coords(point)+'…'));
+      panel
+        .querySelector('[data-facts]')
+        .replaceChildren(node('p', 'Loading facts for ' + coords(point) + '…'));
     }
     draw();
     summary();
     status('Reading terrain height…');
-    open();
+    if (reveal) open();
     try {
       const value = await elevation(point, signal);
       if (token !== intent) return;
@@ -467,12 +463,6 @@ export function mountLocationInvestigation({
     if (token !== intent || disposed) return;
     if (which === 'a') {
       terrain.setReference(Number.isFinite(a.ellipsoid) ? a : null);
-      try {
-        await applyMotion();
-      } catch {
-        status('Ground-movement reference could not be updated.');
-      }
-      if (token !== intent) return;
       arm('b');
     } else {
       status('Point B selected. Click another location to investigate.');
@@ -489,7 +479,6 @@ export function mountLocationInvestigation({
     request?.abort();
     a = b = null;
     terrain.setReference(null);
-    void motion.setReference(null);
     markers.entities.removeAll();
     stop();
     summary();
@@ -529,24 +518,9 @@ export function mountLocationInvestigation({
     }
     sync();
   });
-  on('[data-motion]', 'change', async (e) => {
-    const wanted = e.target.checked;
-    try {
-      await applyMotion();
-      await dataManager.setEnabled('ground-motion', wanted, { origin: 'user' });
-    } catch (err) {
-      status(err.message);
-    }
-    sync();
-  });
-  on(
-    '[data-relative]',
-    'change',
-    () => void applyMotion().catch((e) => status(e.message)),
-  );
   on('[data-range]', 'change', (e) => terrain.setRange(Number(e.target.value)));
   on('[data-radius]', 'change', () => {
-    if (b) void choose({ ...b }, 'b');
+    if (b) void choose({ ...b }, 'b', false);
   });
   const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
   handler.setInputAction((event) => {
@@ -578,7 +552,7 @@ export function mountLocationInvestigation({
     if (b) {
       clearTimeout(timer);
       timer = setTimeout(() => {
-        if (!disposed && b) void choose({ ...b }, 'b');
+        if (!disposed && b) void choose({ ...b }, 'b', false);
       }, 250);
     }
   }
@@ -592,7 +566,7 @@ export function mountLocationInvestigation({
       const variant = motion.getState().variantId;
       if (variant !== lastVariant) {
         lastVariant = variant;
-        if (b) void choose({ ...b }, 'b');
+        if (b) void choose({ ...b }, 'b', false);
       }
     }),
   ];

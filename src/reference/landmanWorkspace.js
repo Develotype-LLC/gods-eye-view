@@ -135,6 +135,7 @@ export function mountLandmanWorkspace({
         ? 'records-panel'
         : item.inspector
       : null;
+    if (currentInspector !== 'location-panel') investigation?.stop();
     dockPanels();
     root.dataset.inspector = currentInspector || '';
     inspector.hidden = !currentInspector;
