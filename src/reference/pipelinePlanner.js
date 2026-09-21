@@ -590,7 +590,7 @@ export function mountPipelinePlanner({ viewer, openInspector }) {
       );
     const table = el('table');
     table.innerHTML =
-      '<thead><tr><th>Candidate</th><th>mi</th><th>Owner names</th><th>Pumping / yr</th><th>Mapped</th></tr></thead>';
+      '<thead><tr><th>Candidate</th><th>mi</th><th>Known names</th><th>Parcels</th><th>Unresolved</th><th>Pumping / yr</th><th>Mapped</th></tr></thead>';
     const tbody = el('tbody');
     for (const r of routes) {
       const tr = el('tr');
@@ -653,13 +653,18 @@ export function mountPipelinePlanner({ viewer, openInspector }) {
               ? r.land.ownerCount
               : 'Unavailable',
         ),
+        el('td', r.land.parcelCount + (r.land.truncated ? '+' : '')),
+        el('td', r.land.unknownParcels ?? 'Unavailable'),
         el('td', money(r.hydraulics?.annualCost)),
         el('td', (r.land.coverage * 100).toFixed(1) + '%'),
       );
       tbody.append(tr);
     }
     table.append(tbody);
-    box.append(table);
+    const tableScroll = el('div');
+    tableScroll.className = 'pp-table-scroll';
+    tableScroll.append(table);
+    box.append(tableScroll);
     draw();
     renderDetail();
     panel.querySelector('[data-export]').disabled = !selected;
@@ -750,18 +755,49 @@ export function mountPipelinePlanner({ viewer, openInspector }) {
     disclosure.append(
       el(
         'summary',
-        `Appraisal owner names to review (${r.land.owners.length})`,
+        `Owner profiles (${r.land.ownerCount ?? 'unknown'} recorded names) · parcel research (${r.land.unknownParcels ?? 'unknown'})`,
       ),
     );
     const list = el('div');
     list.className = 'pp-owner-list';
-    for (const o of r.land.owners) {
+    for (const o of r.land.owners.filter(
+      (o) => o.owner_key !== 'OWNER NOT SUPPLIED',
+    )) {
       const row = el('div');
+      const ownerButton = el('button', o.name);
+      ownerButton.type = 'button';
+      ownerButton.addEventListener('click', () =>
+        document.dispatchEvent(
+          new CustomEvent('landman:owner', {
+            detail: {
+              subject: 'owner:' + o.owner_key,
+              parcels: o.parcel_ids,
+              from: 'pipeline-panel',
+              name: o.name,
+            },
+          }),
+        ),
+      );
       row.append(
-        el('strong', o.name),
+        ownerButton,
         el('small', `${o.parcels} parcels · ${o.counties.join(', ')}`),
       );
       list.append(row);
+    }
+    for (const p of r.land.unresolved || []) {
+      const b = el(
+        'button',
+        `Research unknown ownership · parcel ${p.id} · ${p.county}`,
+      );
+      b.type = 'button';
+      b.addEventListener('click', () =>
+        document.dispatchEvent(
+          new CustomEvent('landman:owner', {
+            detail: { subject: 'parcel:' + p.id, from: 'pipeline-panel' },
+          }),
+        ),
+      );
+      list.append(b);
     }
     disclosure.append(list);
     box.append(disclosure);

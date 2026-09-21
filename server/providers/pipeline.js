@@ -78,7 +78,7 @@ export async function analyzeCorridors(query, body) {
     const owners = (
       await query(
         base +
-          ` SELECT a.owner_key,min(a.raw_owner) AS name,count(DISTINCT a.parcel_id)::int AS parcels,array_agg(DISTINCT h.county) AS counties,min(a.parcel_id)::text AS sample_parcel FROM hits h JOIN landman.land_account a ON a.parcel_id=h.id GROUP BY a.owner_key ORDER BY count(DISTINCT a.parcel_id) DESC,a.owner_key`,
+          ` SELECT a.owner_key,min(a.raw_owner) AS name,count(DISTINCT a.parcel_id)::int AS parcels,array_agg(DISTINCT a.parcel_id::text) AS parcel_ids,array_agg(DISTINCT h.county) AS counties,min(a.parcel_id)::text AS sample_parcel FROM hits h JOIN landman.land_account a ON a.parcel_id=h.id GROUP BY a.owner_key ORDER BY count(DISTINCT a.parcel_id) DESC,a.owner_key`,
         args,
       )
     ).rows;
@@ -91,6 +91,13 @@ export async function analyzeCorridors(query, body) {
         )
       ).rows[0].n,
     );
+    const unresolved = (
+      await query(
+        base +
+          ` SELECT h.id::text,h.county FROM hits h WHERE NOT EXISTS(SELECT 1 FROM landman.land_account a WHERE a.parcel_id=h.id) OR EXISTS(SELECT 1 FROM landman.land_account a WHERE a.parcel_id=h.id AND a.owner_key='OWNER NOT SUPPLIED') ORDER BY h.id`,
+        args,
+      )
+    ).rows;
     const sources = (
       await query(
         base +
@@ -105,6 +112,7 @@ export async function analyzeCorridors(query, body) {
       ownerCount: owners.filter((o) => o.owner_key !== 'OWNER NOT SUPPLIED')
         .length,
       unknownParcels: unknown,
+      unresolved,
       coverage: Math.min(1, Number(summary.coverage)),
       owners,
       sources,

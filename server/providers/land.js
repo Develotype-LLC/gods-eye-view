@@ -1,3 +1,4 @@
+import { ownerWorkspace } from './ownerWorkspace.js';
 import pg from 'pg';
 import { analyzeCorridors } from './pipeline.js';
 import { fetchInfrastructure } from './longhaulInfrastructure.js';
@@ -77,6 +78,7 @@ export function landProxy({ pool: providedPool } = {}) {
     return pool;
   }
   const query = (s, a = []) => db().query(s, a);
+  const workspace = ownerWorkspace(db);
   async function metadata() {
     return {
       counties: (
@@ -168,6 +170,10 @@ export function landProxy({ pool: providedPool } = {}) {
     };
   }
   async function write(path, body, actor) {
+    if (path === '/owner-projects') return workspace.createProject(body, actor);
+    if (path === '/owner-profile-query')
+      return workspace.get('/owner-profile', new URLSearchParams(body), actor);
+    if (path === '/owner-profile') return workspace.save(body, actor);
     if (path === '/route-corridors') return analyzeCorridors(query, body);
     if (path === '/clients') {
       const name = body.name?.trim(),
@@ -248,6 +254,19 @@ export function landProxy({ pool: providedPool } = {}) {
       try {
         const u = new URL(req.url, 'http://local');
         if (req.method === 'GET') {
+          if (
+            ['/owner-projects', '/owner-directory', '/owner-profile'].includes(
+              u.pathname,
+            )
+          )
+            return reply(
+              200,
+              await workspace.get(
+                u.pathname,
+                u.searchParams,
+                String(req.headers['x-landman-user'] || ''),
+              ),
+            );
           if (u.pathname === '/infrastructure')
             return reply(
               200,
@@ -286,7 +305,11 @@ export function landProxy({ pool: providedPool } = {}) {
           raw += chunk;
           if (
             Buffer.byteLength(raw) >
-            (u.pathname === '/route-corridors' ? 300000 : 16000)
+            (u.pathname === '/route-corridors'
+              ? 300000
+              : u.pathname === '/owner-profile-query'
+                ? 64000
+                : 16000)
           )
             return reply(413, { error: 'Request too large' });
         }
@@ -296,16 +319,15 @@ export function landProxy({ pool: providedPool } = {}) {
         } catch {
           throw Error('Invalid JSON');
         }
-        const actor = String(
-          req.headers['x-landman-user'] || 'local app user',
-        ).slice(0, 100);
+        const actor = String(req.headers['x-landman-user'] || '').slice(0, 100);
         return reply(200, await write(u.pathname, body, actor));
       } catch (e) {
         const invalid = e.message.startsWith('Invalid');
-        reply(invalid ? 400 : 503, {
-          error: invalid
-            ? e.message
-            : 'Land database unavailable; retry shortly.',
+        reply(e.status || (invalid ? 400 : 503), {
+          error:
+            invalid || e.status
+              ? e.message
+              : 'Land database unavailable; retry shortly.',
         });
       }
     });

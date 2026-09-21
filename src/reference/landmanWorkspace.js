@@ -1,3 +1,4 @@
+import { mountOwnerWorkspace } from './ownerWorkspace.js';
 import { mountLocationInvestigation } from './locationInvestigation.js';
 import { mountPipelinePlanner } from './pipelinePlanner.js';
 import * as Cesium from 'cesium';
@@ -17,6 +18,7 @@ const INSPECTORS = [
   'location-panel',
   'land-panel',
   'pipeline-panel',
+  'owner-workspace-panel',
   'texas-panel',
   'records-panel',
   'basins-panel',
@@ -58,6 +60,7 @@ export function mountLandmanWorkspace({
  <aside class="lm-sidebar" aria-label="Landman layers"><div class="lm-sidebar-heading"><div><small>YOUR WORKSPACE</small><h2>Explore the basin</h2></div><span data-active-count>0 on</span></div>
  <div class="lm-view-picks" aria-label="Landman task views"></div><p class="lm-view-description" data-view-description>Start with a view, then choose the layers you need.</p>
  <button class="lm-compare-button" data-pipeline>LONG-Haul · pipeline routing</button>
+ <button class="lm-compare-button" data-owners>Owners & relationships</button>
  <button class="lm-compare-button" data-locations>Compare locations · A → B</button>
  <form data-well-search><label for="lm-api">Find a Texas well</label><div><input id="lm-api" placeholder="API-8 or API-10" inputmode="numeric" pattern="(42)?[0-9]{8}" required><button type="submit">Find</button></div></form>
  <div class="lm-layer-tools"><label><span class="lm-sr">Search layers</span><input data-layer-search placeholder="Search layers or sources…" type="search"></label><label class="lm-active-only"><input data-active-only type="checkbox">Active only</label></div>
@@ -411,6 +414,15 @@ export function mountLandmanWorkspace({
     openInspector: setInspector,
   });
   pipeline = mountPipelinePlanner({ viewer, openInspector: setInspector });
+  const ownerWorkspace = mountOwnerWorkspace({
+    viewer,
+    openInspector: setInspector,
+  });
+  root
+    .querySelector('[data-owners]')
+    .addEventListener('click', () => ownerWorkspace.open(), {
+      signal: abort.signal,
+    });
   let previousDetail = null,
     previousArchive = null,
     previousTexas = null;
@@ -458,6 +470,7 @@ export function mountLandmanWorkspace({
     disposed = true;
     investigation.destroy();
     pipeline.destroy();
+    ownerWorkspace.destroy();
     abort.abort();
     offActivity();
     offRecords();

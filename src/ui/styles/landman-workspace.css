@@ -896,3 +896,82 @@ body.landman-mode #cctv-sync-chip {
 #pipeline-panel [data-show-context] {
   width: auto;
 }
+
+#owner-workspace-panel {
+  display: none;
+}
+#landman-workspace[data-inspector='owner-workspace-panel']
+  #owner-workspace-panel {
+  display: block !important;
+}
+#owner-workspace-panel [hidden] {
+  display: none !important;
+}
+#owner-workspace-panel label {
+  display: grid;
+  gap: 6px;
+  margin: 12px 0;
+  font-size: 12px;
+}
+#owner-workspace-panel input,
+#owner-workspace-panel textarea,
+#owner-workspace-panel select {
+  width: 100%;
+  box-sizing: border-box;
+  background: #14242b;
+  color: #ecf3f0;
+  border: 1px solid #45616b;
+  border-radius: 6px;
+  padding: 9px;
+  font: inherit;
+}
+#owner-workspace-panel p {
+  font-size: 12px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+#owner-workspace-panel button {
+  padding: 9px;
+  margin: 4px 0;
+  text-align: left;
+  cursor: pointer;
+}
+#owner-workspace-panel .ow-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+#owner-workspace-panel [data-matches] button,
+#owner-workspace-panel [data-parcels] button {
+  display: block;
+  width: 100%;
+}
+#owner-workspace-panel [data-parcels] {
+  max-height: 240px;
+  overflow-y: auto;
+}
+#owner-workspace-panel a {
+  color: #8fd5d3;
+  font-size: 12px;
+  display: block;
+  margin-bottom: 10px;
+}
+#owner-workspace-panel [data-edit] {
+  border-top: 1px solid #45616b;
+  margin-top: 16px;
+}
+#owner-workspace-panel [data-message] {
+  color: #efd89a;
+}
+#owner-workspace-panel details {
+  padding: 8px 0;
+}
+#pipeline-panel .pp-owner-list button {
+  width: 100%;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+#pipeline-panel .pp-table-scroll {
+  overflow-x: auto;
+}

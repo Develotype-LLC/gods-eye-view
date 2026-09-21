@@ -297,7 +297,15 @@ export function createLandLayer() {
           selectedOwners.set(o.owner_key, o.name);
           chips();
         });
-        list.append(b);
+        const profile = node('button', 'Open profile · ' + o.name);
+        profile.addEventListener('click', () =>
+          document.dispatchEvent(
+            new CustomEvent('landman:owner', {
+              detail: { subject: 'owner:' + o.owner_key, from: 'land-panel' },
+            }),
+          ),
+        );
+        list.append(b, profile);
       }
       if (!data.owners.length)
         list.append(node('p', 'No owner names matched.'));
@@ -347,10 +355,41 @@ export function createLandLayer() {
       link.target = '_blank';
       link.rel = 'noopener';
       box.append(link);
+      if (!data.accounts.length) {
+        const research = node('button', 'Research this parcel');
+        research.addEventListener('click', () =>
+          document.dispatchEvent(
+            new CustomEvent('landman:owner', {
+              detail: { subject: 'parcel:' + id, from: 'land-panel' },
+            }),
+          ),
+        );
+        box.append(research);
+      }
       for (const a of data.accounts) {
         const card = node('section');
         card.className = 'land-account';
         card.append(node('h4', a.raw_owner));
+        const profile = node(
+          'button',
+          a.owner_key === 'OWNER NOT SUPPLIED'
+            ? 'Research this parcel'
+            : 'Open owner profile',
+        );
+        profile.addEventListener('click', () =>
+          document.dispatchEvent(
+            new CustomEvent('landman:owner', {
+              detail: {
+                subject:
+                  a.owner_key === 'OWNER NOT SUPPLIED'
+                    ? 'parcel:' + id
+                    : 'owner:' + a.owner_key,
+                from: 'land-panel',
+              },
+            }),
+          ),
+        );
+        card.append(profile);
         const add = node('button', 'Add this owner to selection');
         add.addEventListener('click', () => {
           selectedOwners.set(a.owner_key, a.raw_owner);
