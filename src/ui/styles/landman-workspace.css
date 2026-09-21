@@ -740,3 +740,139 @@ body.landman-mode #cctv-sync-chip {
   flex-wrap: wrap;
   gap: 6px;
 }
+
+/* Produced-water corridor planning stays separate from terrain comparison. */
+#pipeline-panel {
+  display: none;
+}
+#landman-workspace[data-inspector='pipeline-panel'] #pipeline-panel {
+  display: block !important;
+}
+#landman-workspace[data-inspector='pipeline-panel'] .lm-inspector {
+  width: min(560px, calc(100vw - 375px));
+}
+#pipeline-panel {
+  font-size: 12px;
+}
+#pipeline-panel .pp-badge {
+  color: #73dbc8;
+  letter-spacing: 0.08em;
+  font-size: 10px;
+}
+#pipeline-panel h3 {
+  margin: 8px 0;
+  color: #f0f4f0;
+  font-size: 17px;
+}
+#pipeline-panel p {
+  margin: 9px 0;
+  color: #b6c8c4;
+}
+#pipeline-panel fieldset {
+  border: 1px solid #35504f;
+  border-radius: 9px;
+  margin: 15px 0;
+  padding: 12px;
+}
+#pipeline-panel legend {
+  color: #f3c375;
+  padding: 0 6px;
+  font-weight: 600;
+}
+#pipeline-panel label {
+  display: block;
+  margin: 8px 0;
+  color: #cbd9d5;
+}
+#pipeline-panel input {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 5px;
+  background: #102024;
+  border: 1px solid #3a5355;
+  border-radius: 5px;
+  padding: 8px;
+  color: #edf5f2;
+}
+#pipeline-panel input[type='range'] {
+  accent-color: #54dac1;
+  padding: 0;
+}
+#pipeline-panel .pp-inputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 12px;
+}
+#pipeline-panel button {
+  margin: 3px 4px 3px 0;
+}
+#pipeline-panel .pp-primary {
+  background: #31574f;
+  color: #ecfff9;
+  width: 100%;
+  padding: 11px;
+  font-weight: 650;
+}
+#pipeline-panel .pp-scale {
+  display: flex;
+  justify-content: space-between;
+  color: #9bb5ae;
+}
+#pipeline-panel [data-status] {
+  border-left: 3px solid #54dac1;
+  padding: 8px 10px;
+  background: #1a3031;
+}
+#pipeline-panel table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 11px;
+  margin: 12px 0;
+}
+#pipeline-panel th,
+#pipeline-panel td {
+  text-align: left;
+  border-bottom: 1px solid #304849;
+  padding: 7px 4px;
+}
+#pipeline-panel .pp-selected {
+  background: #28443f;
+}
+#pipeline-panel small {
+  display: block;
+  color: #9ab3ae;
+  font-size: 10px;
+}
+#pipeline-panel details {
+  border-top: 1px solid #304849;
+  margin-top: 12px;
+  padding-top: 10px;
+}
+#pipeline-panel summary {
+  cursor: pointer;
+}
+#pipeline-panel .pp-owner-list {
+  max-height: 240px;
+  overflow: auto;
+}
+#pipeline-panel .pp-owner-list > div {
+  padding: 8px 0;
+  border-bottom: 1px solid #2a4140;
+}
+#pipeline-panel a {
+  display: block;
+  color: #96d8cc;
+  margin: 8px 0;
+}
+#pipeline-panel svg {
+  width: 100%;
+  background: #102328;
+  border-radius: 6px;
+  margin-top: 12px;
+}
+@media (max-width: 800px) {
+  #landman-workspace[data-inspector='pipeline-panel'] .lm-inspector {
+    width: calc(100vw - 24px);
+  }
+}

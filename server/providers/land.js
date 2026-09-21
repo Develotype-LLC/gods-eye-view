@@ -1,4 +1,5 @@
 import pg from 'pg';
+import { analyzeCorridors } from './pipeline.js';
 import { parseTexasBox } from './texas.js';
 export const LAND_ROLES = [
   'upstream',
@@ -166,6 +167,7 @@ export function landProxy({ pool: providedPool } = {}) {
     };
   }
   async function write(path, body, actor) {
+    if (path === '/route-corridors') return analyzeCorridors(query, body);
     if (path === '/clients') {
       const name = body.name?.trim(),
         owners = body.owners;

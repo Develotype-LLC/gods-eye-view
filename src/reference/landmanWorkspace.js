@@ -1,4 +1,5 @@
 import { mountLocationInvestigation } from './locationInvestigation.js';
+import { mountPipelinePlanner } from './pipelinePlanner.js';
 import * as Cesium from 'cesium';
 import {
   LANDMAN_MODE_KEY,
@@ -15,6 +16,7 @@ const element = (tag, text) => {
 const INSPECTORS = [
   'location-panel',
   'land-panel',
+  'pipeline-panel',
   'texas-panel',
   'records-panel',
   'basins-panel',
@@ -55,6 +57,7 @@ export function mountLandmanWorkspace({
   root.innerHTML = `<header class="lm-topbar"><div class="lm-brand"><img src="/logo.svg" alt=""><div><strong>LANDMAN’S <em>Eye</em></strong><span>WELLS · WATER · LAND</span></div></div><nav aria-label="Workspace view"><button data-mode="landman" aria-pressed="true">Landman</button><button data-mode="console" aria-pressed="false">Full console ↗</button></nav><div class="lm-top-actions"><button data-region="texas">Texas</button><button data-region="permian">Permian</button><button data-region="us">US basins</button><button data-tilt>2D / 3D tilt</button><button data-mobile-layers aria-expanded="true">Layers</button></div></header>
  <aside class="lm-sidebar" aria-label="Landman layers"><div class="lm-sidebar-heading"><div><small>YOUR WORKSPACE</small><h2>Explore the basin</h2></div><span data-active-count>0 on</span></div>
  <div class="lm-view-picks" aria-label="Landman task views"></div><p class="lm-view-description" data-view-description>Start with a view, then choose the layers you need.</p>
+ <button class="lm-compare-button" data-pipeline>Plan a produced-water pipeline</button>
  <button class="lm-compare-button" data-locations>Compare locations · A → B</button>
  <form data-well-search><label for="lm-api">Find a Texas well</label><div><input id="lm-api" placeholder="API-8 or API-10" inputmode="numeric" pattern="(42)?[0-9]{8}" required><button type="submit">Find</button></div></form>
  <div class="lm-layer-tools"><label><span class="lm-sr">Search layers</span><input data-layer-search placeholder="Search layers or sources…" type="search"></label><label class="lm-active-only"><input data-active-only type="checkbox">Active only</label></div>
@@ -72,7 +75,7 @@ export function mountLandmanWorkspace({
       root
         .querySelector(selector)
         .addEventListener(type, fn, { signal: abort.signal });
-  let investigation;
+  let investigation, pipeline;
   const status = root.querySelector('.lm-status'),
     list = root.querySelector('.lm-layer-list'),
     inspector = root.querySelector('.lm-inspector'),
@@ -137,6 +140,7 @@ export function mountLandmanWorkspace({
         : item.inspector
       : null;
     if (currentInspector !== 'location-panel') investigation?.stop();
+    if (currentInspector !== 'pipeline-panel') pipeline?.stop();
     dockPanels();
     root.dataset.inspector = currentInspector || '';
     inspector.hidden = !currentInspector;
@@ -288,6 +292,7 @@ export function mountLandmanWorkspace({
       }
     } else {
       investigation?.stop();
+      pipeline?.stop();
       landman = false;
       document.body.classList.remove('landman-mode');
       root.hidden = true;
@@ -347,6 +352,7 @@ export function mountLandmanWorkspace({
     setInspector(null);
   });
   on('[data-locations]', 'click', () => investigation.open());
+  on('[data-pipeline]', 'click', () => pipeline.open());
   on('[data-layer-search]', 'input', (e) => {
     search = e.target.value;
     render();
@@ -404,6 +410,7 @@ export function mountLandmanWorkspace({
     catalog,
     openInspector: setInspector,
   });
+  pipeline = mountPipelinePlanner({ viewer, openInspector: setInspector });
   let previousDetail = null,
     previousArchive = null,
     previousTexas = null;
@@ -450,6 +457,7 @@ export function mountLandmanWorkspace({
   return () => {
     disposed = true;
     investigation.destroy();
+    pipeline.destroy();
     abort.abort();
     offActivity();
     offRecords();
