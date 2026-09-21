@@ -1,3 +1,4 @@
+import {parseInspection,inspectionWhere,INSPECTION_POINT} from './inspection.js';
 import pg from 'pg';
 import {parseTexasBox} from './texas.js';
 const KINDS=new Set(['operator','plug_action','iwar_record','iwar_well','iwar_well_operator','iwar_well_denial_code','permian_current_well_status','permian_operator_county_year','w10_test','g10_test','annual_legal_operator_ranking','ewa_exxon_family_candidate','ewa_operator_snapshot','well_location']);
@@ -34,6 +35,21 @@ export function referenceRecordsProxy({pool:providedPool}={}) {
     FROM landman.reference_feature f WHERE ${where} ORDER BY f.key LIMIT 1000`,args)).rows;
   return {mode:'features',count,features:rows};
  }
+ async function inspect(params){
+  const point=parseInspection(params),period=params.get('period')||'',kind=params.get('kind')||'ET';
+  if(period&&!/^\d{4}(-\d{2})?$/.test(period))throw new Error('Invalid period');
+  if(!['ET','ETo'].includes(kind))throw new Error('Invalid measurement');
+  const d=await dataset(params.get('dataset'));
+  const args=[...point,d.run_id,d.id,period,kind];
+  const where=`f.run_id=$4 AND f.dataset=$5 AND ${inspectionWhere('f.geom')} AND ($6='' OR left(f.observed_date::text,length($6))=$6 OR EXISTS(SELECT 1 FROM landman.reference_observation o WHERE o.run_id=f.run_id AND o.dataset=f.dataset AND o.feature_key=f.key AND o.period=$6 AND ($5<>'openet' OR o.kind=$7)))`;
+  const total=Number((await query(`SELECT count(*)::int AS n FROM landman.reference_feature f WHERE ${where}`,args)).rows[0].n);
+  const features=(await query(`SELECT f.key,f.name,f.api8,f.properties,f.observed_date,
+   ST_Distance(f.geom::geography,${INSPECTION_POINT}::geography) AS distance_m,
+   ST_Covers(f.geom,${INSPECTION_POINT}) AS contains_point,
+   (SELECT avg(o.value) FROM landman.reference_observation o WHERE o.run_id=f.run_id AND o.dataset=f.dataset AND o.feature_key=f.key AND o.period=$6 AND o.kind=$7) AS value
+   FROM landman.reference_feature f WHERE ${where} ORDER BY distance_m,f.key LIMIT 5`,args)).rows;
+  return {dataset:d.id,name:d.name,source:d.source,note:d.note,total,features,period,kind,radius:point[2]};
+ }
  function offset(params){const v=params.get('offset')||'0';if(!/^\d{1,7}$/.test(v)||Number(v)>1000000)throw new Error('Invalid offset');return Number(v);}
  async function detail(params){
   const d=await dataset(params.get('dataset')),key=params.get('key')||'';if(!key||key.length>160)throw new Error('Invalid record key');const off=offset(params);
@@ -63,6 +79,7 @@ export function referenceRecordsProxy({pool:providedPool}={}) {
   try{const u=new URL(req.url,'http://local');
    if(u.pathname==='/catalog')return reply(200,await catalog());
    if(u.pathname==='/viewport')return reply(200,await viewport(u.searchParams));
+   if(u.pathname==='/inspect')return reply(200,await inspect(u.searchParams));
    if(u.pathname==='/detail')return reply(200,await detail(u.searchParams));
    if(u.pathname==='/rrc')return reply(200,await records(u.searchParams));
    return reply(404,{error:'Unknown reference endpoint'});

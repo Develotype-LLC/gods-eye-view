@@ -38,6 +38,6 @@ export function mountTexasPanel({viewer,layer,dataManager,referenceLayer}){
   }
  }
  const unsub=layer.subscribe(sync),activity=dataManager.subscribeActivity(sync);
- const handler=new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);handler.setInputAction(e=>{if(!dataManager.isEnabled('texas-wells'))return;const id=viewer.scene.pick(e.position)?.id?.id;if(typeof id==='string'&&id.startsWith('texas:'))layer.pick(id);},Cesium.ScreenSpaceEventType.LEFT_CLICK);
+ const handler=new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);handler.setInputAction(e=>{if(document.body.dataset.locationPicking)return;if(!dataManager.isEnabled('texas-wells'))return;const id=viewer.scene.pick(e.position)?.id?.id;if(typeof id==='string'&&id.startsWith('texas:'))layer.pick(id);},Cesium.ScreenSpaceEventType.LEFT_CLICK);
  sync();return()=>{unsub();activity();handler.destroy();panel.remove();};
 }

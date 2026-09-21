@@ -48,6 +48,6 @@ export function mountReferenceRecordsPanel({viewer,dataManager,layer}){
  }
  function pagination(box,offset,total,size,load){const row=node('div');row.append(node('small',`${total?offset+1:0}–${Math.min(offset+size,total)} of ${total.toLocaleString()}`));if(offset){const b=node('button','Previous');b.onclick=()=>load(Math.max(0,offset-size));row.append(b);}if(offset+size<total){const b=node('button','Next records');b.onclick=()=>load(offset+size);row.append(b);}box.append(row);}
  const unsubscribe=layer.subscribe(sync),handler=new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
- handler.setInputAction(e=>{if(!layer.getState().enabled)return;const id=viewer.scene.pick(e.position)?.id?.id;if(typeof id==='string'&&id.startsWith('reference:'))void layer.pick(id);},Cesium.ScreenSpaceEventType.LEFT_CLICK);
+ handler.setInputAction(e=>{if(document.body.dataset.locationPicking)return;if(!layer.getState().enabled)return;const id=viewer.scene.pick(e.position)?.id?.id;if(typeof id==='string'&&id.startsWith('reference:'))void layer.pick(id);},Cesium.ScreenSpaceEventType.LEFT_CLICK);
  sync();return()=>{abort.abort();unsubscribe();handler.destroy();panel.remove();};
 }

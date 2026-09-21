@@ -1,10 +1,12 @@
 import * as Cesium from 'cesium';
+import {divergingColor} from './locationModel.js';
 import { validateRaster, sampleRaster } from './raster.js';
 
 const ROOT = '/reference-data/heavenwatch/';
 
 export function createGroundMotionLayer() {
   let viewer, mapController, manifest, manifestPromise, imagery, enabled = false, destroyed = false;
+  let reference=null,referenceValue=null;
   let variantId = 'displacement', opacity = 0.7, generation = 0, error = null;
   const listeners = new Set();
   const values = new Map();
@@ -28,12 +30,26 @@ export function createGroundMotionLayer() {
     if (imagery && viewer && !viewer.isDestroyed()) viewer.imageryLayers.remove(imagery, true);
     imagery = null;
   }
+  async function readValues(variant){
+    if(!values.has(variant.id)){const response=await fetch(ROOT+variant.values,{signal:controller.signal});if(!response.ok)throw new Error('Pixel values are unavailable');const buffer=await response.arrayBuffer();if(buffer.byteLength!==variant.width*variant.height*4)throw new Error('Raster byte count mismatch');values.set(variant.id,buffer);}return values.get(variant.id);
+  }
   async function show() {
     const intent = ++generation;
     const data = await readManifest();
     const variant = data.variants.find(item => item.id === variantId);
     if (!variant) throw new Error('Unknown ground-motion variant');
-    const provider = await Cesium.SingleTileImageryProvider.fromUrl(ROOT + variant.image, {
+    let url=ROOT+variant.image;referenceValue=null;
+    if(reference){
+      const buffer=await readValues(variant),base=sampleRaster(variant,buffer,reference.longitude,reference.latitude);
+      if(intent!==generation||!enabled||destroyed)return;
+      if(base.status!=='value'){removeImagery();error='Point A is outside valid OPERA pixels. Choose A inside the Crane snapshot or turn off relative motion.';notify();return;}
+      referenceValue=base.value;
+      const canvas=document.createElement('canvas');canvas.width=variant.width;canvas.height=variant.height;
+      const ctx=canvas.getContext('2d'),pixels=ctx.createImageData(variant.width,variant.height),view=new DataView(buffer);
+      for(let i=0;i<variant.width*variant.height;i++)pixels.data.set(divergingColor(view.getFloat32(i*4,true)-base.value,30),i*4);
+      ctx.putImageData(pixels,0,0);url=canvas.toDataURL('image/png');
+    }
+    const provider = await Cesium.SingleTileImageryProvider.fromUrl(url, {
       rectangle: Cesium.Rectangle.fromDegrees(...variant.bounds),
       credit: new Cesium.Credit('NASA JPL OPERA / ASF DAAC · HeavenWatch derived LOS velocity'),
     });
@@ -66,7 +82,8 @@ export function createGroundMotionLayer() {
     update() { return true; },
     readManifest,
     subscribe(listener) { listeners.add(listener); return () => listeners.delete(listener); },
-    getState() { return {enabled, variantId, opacity, manifest, error}; },
+    getState() { return {enabled, variantId, opacity, manifest, error, reference, referenceValue}; },
+    async setReference(point){reference=point;if(enabled)await show();else notify();},
     async setVariant(id) {
       const data = await readManifest();
       if (!data.variants.some(item => item.id === id)) throw new Error('Unknown ground-motion variant');

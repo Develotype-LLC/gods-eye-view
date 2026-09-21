@@ -47,6 +47,15 @@ export const LANDMAN_LAYERS = [
     color: '#c197ff',
   },
   {
+    id: 'terrain-difference',
+    group: 'Geology & movement',
+    name: 'Terrain elevation',
+    source: 'Terrain · height relative to point A',
+    tag: 'Comparison',
+    color: '#dc9956',
+    inspector: 'location-panel',
+  },
+  {
     id: 'us-basins',
     group: 'Geology & movement',
     name: 'Geological basins',

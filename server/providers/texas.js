@@ -1,3 +1,4 @@
+import {parseInspection,inspectionWhere,INSPECTION_POINT} from './inspection.js';
 import pg from 'pg';
 import {readResponseJsonCapped} from './common/http.js';
 export function parseTexasBox(value){
@@ -26,6 +27,14 @@ export function texasProxy({pool:providedPool,fetchImpl=(...args)=>fetch(...args
   const sx=Math.max((bounds[2]-bounds[0])/32,0.001),sy=Math.max((bounds[3]-bounds[1])/22,0.001);
   const rows=(await db().query(`SELECT count(*)::int AS count,avg(ST_X(geom)) AS longitude,avg(ST_Y(geom)) AS latitude,min(ST_X(geom)) AS west,min(ST_Y(geom)) AS south,max(ST_X(geom)) AS east,max(ST_Y(geom)) AS north FROM landman.well_location WHERE ${where} GROUP BY floor(ST_X(geom)/$6),floor(ST_Y(geom)/$7)`,[...args,sx,sy])).rows;
   return {mode:'clusters',count,features:rows};
+ }
+ async function inspect(params){
+  const point=parseInspection(params),category=params.get('category')||'';
+  if(category.length>80)throw new Error('Invalid category');
+  const args=[...point,category],where=`run_id=(SELECT run_id FROM landman.dataset WHERE name='gis') AND ${inspectionWhere('geom')} AND ($4='' OR category=$4)`;
+  const total=Number((await db().query(`SELECT count(*)::int AS count FROM landman.well_location WHERE ${where}`,args)).rows[0].count);
+  const features=(await db().query(`SELECT objectid::text AS id,api8,well_number,category,ST_Distance(geom::geography,${INSPECTION_POINT}::geography) AS distance_m FROM landman.well_location WHERE ${where} ORDER BY distance_m,objectid LIMIT 5`,args)).rows;
+  return {name:'Texas wells',total,features,source:'Texas RRC statewide GIS inventory',note:'Source classifications include permitted and plugged locations; proximity does not establish ownership or operating status.',radius:point[2]};
  }
  async function well(params){
   const id=params.get('id'),api=params.get('api');let query,args;
@@ -67,6 +76,7 @@ export function texasProxy({pool:providedPool,fetchImpl=(...args)=>fetch(...args
   try{
    if(url.pathname==='/status')return reply(200,await status());
    if(url.pathname==='/viewport')return reply(200,await viewport(url.searchParams));
+   if(url.pathname==='/inspect')return reply(200,await inspect(url.searchParams));
    if(url.pathname==='/well')return reply(200,await well(url.searchParams));
    if(url.pathname==='/history')return reply(200,await history(url.searchParams.get('api')||''));
    return reply(404,{error:'Unknown Texas data endpoint'});

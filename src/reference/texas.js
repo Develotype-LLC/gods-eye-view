@@ -32,6 +32,7 @@ export function createTexasLayer(){
   destroy(){this.disable();removeMove?.();listeners.clear();return true;},update(){return true;},readStatus,
   flyTo(){viewer.camera.flyTo({destination:Cesium.Rectangle.fromDegrees(...TEXAS),duration:1.5});},
   setCategory(value){category=value;void refresh();},
+  async inspectId(id){await select({id});},
   async search(api){await select({api});const w=detail?.matches[0];if(w?.longitude&&w?.latitude)viewer.camera.flyTo({destination:Cesium.Cartesian3.fromDegrees(w.longitude,w.latitude,9000),duration:1.2});},
   pick(id){const row=picks.get(id);if(!row)return;if(result.mode==='clusters'){const pad=Math.max(.015,(row.east-row.west)*.1);viewer.camera.flyTo({destination:Cesium.Rectangle.fromDegrees(row.west-pad,row.south-pad,row.east+pad,row.north+pad),duration:1.2});}else void select({id:row.id});},
   async loadHistory(){const api=detail?.matches[0]?.api8;if(!api)return;history={loading:true};notify();try{const data=await get('history?'+new URLSearchParams({api}));if(detail?.matches[0]?.api8===api)history=data;}catch(reason){history={error:reason.message};}notify();},

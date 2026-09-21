@@ -36,6 +36,9 @@ export function mountReferenceLibrary({viewer, dataManager, layer, catalog}) {
   function sync() {
     const state = layer.getState();
     legend.hidden = !dataManager.isEnabled('ground-motion');
+    legend.querySelector('.ref-colorbar').style.background=state.reference?'linear-gradient(90deg,#278ec4,#ebe7cb,#d74e2b)':'';
+    legend.querySelector('.ref-scale').innerHTML=state.reference?'<span>−30 · below A rate</span><span>0</span><span>+30 · above A rate</span>':'<span>−30 · away</span><span>0</span><span>+30 · toward</span>';
+    if(state.error)sample.textContent=state.error;
     legend.querySelector('[data-variant]').value = state.variantId;
     legend.querySelector('[data-opacity]').value = state.opacity;
   }
@@ -153,6 +156,7 @@ export function mountReferenceLibrary({viewer, dataManager, layer, catalog}) {
   }
   const picker = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
   picker.setInputAction(async event => {
+    if(document.body.dataset.locationPicking)return;
     if (!dataManager.isEnabled('ground-motion') || dialog.open) return;
     const ray = viewer.camera.getPickRay(event.position);
     const point = ray && viewer.scene.globe.pick(ray, viewer.scene); if (!point) return;
@@ -163,6 +167,7 @@ export function mountReferenceLibrary({viewer, dataManager, layer, catalog}) {
       const result = await layer.sample(Cesium.Math.toDegrees(geo.longitude), Cesium.Math.toDegrees(geo.latitude));
       if (disposed || sampleIntent !== intent || variant !== layer.getState().variantId) return;
       sample.textContent = result.status === 'value' ? `${result.value >= 0 ? '+' : ''}${result.value.toFixed(2)} mm/year LOS · ${result.latitude.toFixed(5)}, ${result.longitude.toFixed(5)}` : result.status === 'no-data' ? 'No valid observation at this pixel. This is not zero motion.' : 'Outside the installed Crane County coverage.';
+      const base=layer.getState().referenceValue;if(result.status==='value'&&Number.isFinite(base))sample.textContent+=` · ${(result.value-base).toFixed(2)} mm/year relative to A`;
     } catch (error) {if (!disposed && sampleIntent === intent) sample.textContent = error.message;}
   }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
   list(); void showDetail(REFERENCE_CATALOG[0]); sync();

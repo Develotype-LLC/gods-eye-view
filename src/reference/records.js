@@ -54,7 +54,8 @@ export function createReferenceRecordsLayer(){
   openArchive(api){void this.searchArchive({api});},
   subscribe(fn){listeners.add(fn);return()=>listeners.delete(fn);},
   getState(){return{enabled,metadata,selected,active:[...active],results:new Map(results),loading:[...requests.keys()],period:periods.get(selected)||'',measurement:measurements.get(selected)||'ET',detail,archive,error};},
-  getStats(){return{count:[...results.values()].reduce((n,r)=>n+r.count,0),source:'Local source snapshots',error};},
+  getFilters(id){return {period:periods.get(id)||'',kind:measurements.get(id)||'ET'};},
+ getStats(){return{count:[...results.values()].reduce((n,r)=>n+r.count,0),source:'Local source snapshots',error};},
  };
  return layer;
 }

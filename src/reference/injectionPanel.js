@@ -44,6 +44,6 @@ export function mountInjectionPanel({viewer, dataManager, layer}) {
   }
   const unsubscribe = layer.subscribe(sync), unactivity = dataManager.subscribeActivity(sync);
   const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
-  handler.setInputAction(event => {if (!dataManager.isEnabled('injection-wells')) return; const id = viewer.scene.pick(event.position)?.id?.id; if (typeof id === 'string' && id.startsWith('injection:')) layer.select(id.slice(10));}, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+  handler.setInputAction(event => {if(document.body.dataset.locationPicking)return;if (!dataManager.isEnabled('injection-wells')) return; const id = viewer.scene.pick(event.position)?.id?.id; if (typeof id === 'string' && id.startsWith('injection:')) layer.select(id.slice(10));}, Cesium.ScreenSpaceEventType.LEFT_CLICK);
   sync(); return () => {unsubscribe(); unactivity(); handler.destroy(); panel.remove();};
 }

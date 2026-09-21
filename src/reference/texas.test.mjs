@@ -15,3 +15,7 @@ test('small viewport returns bounded points and invalid lookups never reach the 
  assert.equal((await request('/viewport?bbox=-103,31,-102,32')).body.mode,'points');assert.ok(calls[1].includes('LIMIT 1500'));
  const before=calls.length;assert.equal((await request('/well?api=bad')).status,400);assert.equal(calls.length,before);assert.equal((await request('/status','POST')).status,405);
 });
+test('Texas point inspection retains category filter and caps records without capping count',async()=>{
+ const calls=[];const request=fixture(async(sql,args)=>{calls.push({sql,args});return{rows:sql.includes('count(*)')?[{count:200}]:[{id:'77',api8:null,category:'Oil Well',distance_m:10}]};});
+ const r=await request('/inspect?longitude=-102&latitude=32&radius=500&category=Oil%20Well');assert.equal(r.status,200);assert.equal(r.body.total,200);assert.equal(r.body.features[0].id,'77');assert.deepEqual(calls[0].args,[-102,32,500,'Oil Well']);assert.match(calls[1].sql,/LIMIT 5/);assert.match(calls[1].sql,/ORDER BY distance_m/);
+});

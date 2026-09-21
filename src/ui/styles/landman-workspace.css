@@ -491,5 +491,102 @@ body.landman-mode #cctv-sync-chip {
   }
 }
 @media (max-width: 380px) {
-  .lm-top-actions [data-tilt] { display: none; }
+  .lm-top-actions [data-tilt] {
+    display: none;
+  }
+}
+#landman-workspace .lm-compare-button {
+  width: 100%;
+  margin: 0 0 16px;
+  background: #36554b;
+  border-color: #719883;
+}
+#landman-workspace[data-inspector='location-panel'] #location-panel {
+  display: block !important;
+}
+#location-panel label {
+  display: block;
+  margin: 12px 0 6px;
+}
+#location-panel input[type='checkbox'] {
+  margin-right: 6px;
+}
+#location-panel select,
+#location-panel input[data-coordinates] {
+  display: block;
+  width: 100%;
+  margin-top: 5px;
+}
+.li-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.li-coordinates > button {
+  margin-top: 5px;
+}
+.li-ramp {
+  height: 9px;
+  background: linear-gradient(90deg, #278ec4, #ebe7cb, #d74e2b);
+  border-radius: 4px;
+  margin-bottom: 3px;
+}
+.li-method {
+  font-size: 11px;
+  color: #abc0b8;
+  border-top: 1px solid #3b4e4a;
+  padding-top: 12px;
+}
+.li-fact-card {
+  border-top: 1px solid #43574e;
+  padding: 10px 0;
+}
+.li-fact-card h4 {
+  color: #dbc08b;
+  margin: 0 0 7px;
+}
+.li-fact-card small {
+  color: #a6bbb1;
+}
+.li-record {
+  padding: 10px 0;
+  border-top: 1px solid #293f38;
+}
+.li-record dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  overflow-wrap: anywhere;
+}
+.li-record dd {
+  margin: 0;
+}
+.li-record dt {
+  color: #acc1b7;
+}
+.li-record strong {
+  overflow-wrap: anywhere;
+}
+.lm-inspector > header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--lm-bg);
+}
+#location-panel [data-comparison] {
+  background: #20332d;
+  border: 1px solid #425e50;
+  border-radius: 6px;
+  padding: 10px;
+  margin: 12px 0;
+}
+#location-panel [data-comparison] h3 {
+  margin: 0 0 8px;
+}
+#location-panel [data-comparison] p {
+  margin: 5px 0;
+}
+#location-panel [data-overlap] {
+  color: #e0bf88;
+  font-size: 11px;
 }

@@ -1,3 +1,4 @@
+import { createTerrainDifferenceLayer } from '../reference/terrainDifference.js';
 import { createReferenceRecordsLayer } from '../reference/records.js';
 import { createBasinsLayer } from '../reference/basins.js';
 import { createTexasLayer } from '../reference/texas.js';
@@ -110,6 +111,7 @@ export function createApplicationCatalog({
     const catalog = createLayerCatalog(
       [
         createGroundMotionLayer(),
+        createTerrainDifferenceLayer(),
     createInjectionLayer(),
     createTexasLayer(),
     createBasinsLayer(),
