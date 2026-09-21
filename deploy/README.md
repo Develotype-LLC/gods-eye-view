@@ -89,3 +89,15 @@ branches and retain upstream attribution. Private data and secrets do not belong
 in this public fork.
 
 The Landman hostname defaults to the Landman workspace even with a saved console preference or a shared-map hash. An explicit `?view=console` still allows switching to Full console. Both hostnames route through the existing tunnel and nginx authentication. Google Maps browser-key referrers include both HTTPS hostnames.
+
+## Antony access · 2026-09-21
+
+Antony uses `antony` at https://landman.develotype.com. His generated credentials
+are stored in mode-600 `deploy/.secrets/viewers/antony.json` and the private handoff
+file `deploy/.secrets/antony-login.txt`; deployment preserves this account through
+the existing viewer upsert. The public-data map and existing land/pipeline tools
+are shared application features. No private owner-relationship project membership
+has been granted to Antony. Private owner-workspace authorization is separate from
+the basic site login and is enforced per project.
+
+The non-secret user guide is [Antony getting started](../docs/reference/ANTONY-GETTING-STARTED.md).
