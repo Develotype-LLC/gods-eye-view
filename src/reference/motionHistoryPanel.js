@@ -3,11 +3,12 @@ import { historyWindow } from './motionHistory.js';
 export function mountMotionHistoryPanel(legend, layer) {
   const panel = document.createElement('div');
   panel.className = 'motion-history';
-  panel.innerHTML = `<label>Coverage<select data-coverage><option value="us">United States · ASF service</option><option value="crane">Crane County · local archive</option></select></label>
-  <div data-national><div class="motion-regions"><button type="button" data-region="us">Lower 48</button><button type="button" data-region="alaska">Alaska</button><button type="button" data-region="hawaii">Hawaii</button></div><p>US coverage where NASA has valid observations, including Alaska and Hawaii. The map shows <strong>long-term velocity</strong>; the period below changes the selected point's history.</p>
+  panel.innerHTML = `<label>Map view<select data-coverage><option value="us">US · long-term velocity</option><option value="permian">Permian pilot · dated change maps</option><option value="crane">Crane County · local archive</option></select></label>
+  <div data-period-map hidden><strong>Map overlay · measured change</strong><label>Map change period<select data-map-period><option value="month">1 month</option><option value="year" selected>1 year</option><option value="five">5 years</option><option value="ten" disabled>10 years · insufficient history</option></select></label><div class="motion-regions"><button data-period-area>Both areas</button><button data-pilot="validation_b">Crane / Tubbs</button><button data-pilot="validation_c">Toyah</button></div><p data-map-dates></p><p>Crane / Tubbs Corner and Toyah archive footprints only—not the whole Permian. These maps end in December 2025. Changing this period updates the overlay.</p><p>Colors show end-minus-start displacement in mm, with a fixed ±100 mm scale. Transparent areas have no valid endpoint pair. Click a pixel for its value and exact dates.</p></div>
+  <div data-national><div class="motion-map-summary"><strong>Map overlay · long-term velocity</strong><p>Colors show mm/year across the available record. For dated overlays, switch to the Permian pilot below.</p><button data-open-period-map>Show Permian change maps</button></div><div class="motion-regions"><button type="button" data-region="us">Lower 48</button><button type="button" data-region="alaska">Alaska</button><button type="button" data-region="hawaii">Hawaii</button></div><p>US coverage where NASA has valid observations, including Alaska and Hawaii. The map shows <strong>long-term velocity</strong>; the period below changes the selected point's history.</p>
   <label>Satellite orbit<select data-orbit><option value="ascending">Ascending</option><option value="descending">Descending</option></select></label>
-  <p>Click the map to inspect a location, or enter coordinates.</p><form data-history-form><input aria-label="Ground movement coordinates" placeholder="31.4007, -102.6049" required><button>Read history</button></form>
-  <label>Change period<select data-period><option value="month">1 month</option><option value="year" selected>1 year</option><option value="five">5 years</option><option value="ten">10 years</option><option value="all">All available</option></select></label>
+  <h3 class="motion-section-title">Selected point history</h3><p class="motion-period-note">The period changes this point’s chart and value only. It does not change the map colors.</p>
+  <label>Point-history period<select data-period><option value="month">1 month</option><option value="year" selected>1 year</option><option value="five">5 years</option><option value="ten">10 years</option><option value="all">All available</option></select></label>
   <label data-frame-label hidden>Observation frame<select data-frame></select></label>
   <p data-history-status role="status">Select a location. End date follows its latest available observation.</p><div data-history-result></div>
   <small>Short-wavelength line-of-sight displacement. Positive: toward satellite; negative: away. Not vertical subsidence. No data is not zero movement. Period selections do not recolor the national overview.</small></div>`;
@@ -120,6 +121,8 @@ export function mountMotionHistoryPanel(legend, layer) {
   }
   async function inspect(longitude, latitude) {
     selectedPoint = { longitude, latitude };
+    panel.querySelector('[data-frame]').replaceChildren();
+    panel.querySelector('[data-frame-label]').hidden = true;
     const current = ++intent;
     request?.abort();
     request = new AbortController();
@@ -163,33 +166,35 @@ export function mountMotionHistoryPanel(legend, layer) {
             : e.message;
     }
   }
-  on('[data-history-form]', 'submit', (event) => {
-    event.preventDefault();
-    const parts = panel
-      .querySelector('input')
-      .value.split(',')
-      .map((s) => s.trim());
-    const [lat, lon] = parts.map(Number);
-    if (
-      parts.length !== 2 ||
-      parts.some((s) => !s) ||
-      !Number.isFinite(lat) ||
-      !Number.isFinite(lon) ||
-      Math.abs(lat) > 85 ||
-      Math.abs(lon) > 180
-    ) {
-      status.textContent = 'Enter latitude, longitude in decimal degrees.';
-      return;
-    }
-    void inspect(lon, lat);
-  });
   for (const button of panel.querySelectorAll('[data-region]'))
     button.addEventListener(
       'click',
       () => void layer.flyTo(button.dataset.region),
       { signal: abort.signal },
     );
+  on('[data-open-period-map]', 'click', async () => {
+    try {
+      await layer.setCoverage('permian');
+      await layer.flyTo();
+    } catch (error) {
+      status.textContent = error.message;
+    }
+  });
   on('[data-period]', 'change', draw);
+  on('[data-period-area]', 'click', () => void layer.flyTo());
+  for (const button of panel.querySelectorAll('[data-pilot]'))
+    button.addEventListener(
+      'click',
+      () => void layer.flyTo(button.dataset.pilot),
+      { signal: abort.signal },
+    );
+  on('[data-map-period]', 'change', async (event) => {
+    try {
+      await layer.setMapPeriod(event.target.value);
+    } catch (error) {
+      panel.querySelector('[data-map-dates]').textContent = error.message;
+    }
+  });
   on('[data-frame]', 'change', draw);
   on('[data-coverage]', 'change', async (e) => {
     request?.abort();
@@ -219,13 +224,35 @@ export function mountMotionHistoryPanel(legend, layer) {
       national = state.coverage === 'us';
     panel.querySelector('[data-coverage]').value = state.coverage;
     panel.querySelector('[data-national]').hidden = !national;
+    panel.querySelector('[data-period-map]').hidden =
+      state.coverage !== 'permian';
+    panel.querySelector('[data-map-period]').value = state.mapPeriod;
+    const rasters =
+      state.periodManifest?.variants.filter(
+        (item) => item.available && item.period === state.mapPeriod,
+      ) || [];
+    panel.querySelector('[data-map-dates]').textContent = rasters
+      .map((item) => `${item.name}: ${item.startDate} → ${item.endDate}`)
+      .join(' · ');
     panel.querySelector('[data-orbit]').value = state.direction;
-    legend.querySelector('[data-variant]').parentElement.hidden = national;
+    legend.querySelector('[data-variant]').parentElement.hidden =
+      state.coverage !== 'crane';
   }
   const unsubscribe = layer.subscribe(sync);
   sync();
   return {
     inspect,
+    clear() {
+      intent++;
+      request?.abort();
+      selectedPoint = null;
+      data = null;
+      result.replaceChildren();
+      panel.querySelector('[data-frame]').replaceChildren();
+      panel.querySelector('[data-frame-label]').hidden = true;
+      status.textContent =
+        'Select a location. End date follows its latest available observation.';
+    },
     destroy() {
       intent++;
       abort.abort();

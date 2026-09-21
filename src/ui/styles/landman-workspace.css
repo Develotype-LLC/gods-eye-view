@@ -591,12 +591,87 @@ body.landman-mode #cctv-sync-chip {
   font-size: 11px;
 }
 
-.motion-history [hidden] { display: none !important; }
-.motion-history p { line-height: 1.5; margin: 10px 0; }
-.motion-history form { display: flex; flex-wrap: wrap; gap: 6px; }
-.motion-history input { min-width: 0; width: 100%; }
-.motion-history svg { width: 100%; background: #14242b; border: 1px solid #42545a; border-radius: 6px; }
-.motion-history h3 { color: #77d1c4; font-size: 22px; }
-.motion-history table { width: 100%; font-size: 12px; }
-.motion-history td { padding: 4px; }
-.motion-regions { display: flex; gap: 6px; margin: 10px 0; flex-wrap: wrap; }
+.motion-history [hidden] {
+  display: none !important;
+}
+.motion-history p {
+  line-height: 1.5;
+  margin: 10px 0;
+}
+.motion-history form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.motion-history input {
+  min-width: 0;
+  width: 100%;
+}
+.motion-history svg {
+  width: 100%;
+  background: #14242b;
+  border: 1px solid #42545a;
+  border-radius: 6px;
+}
+.motion-history h3 {
+  color: #77d1c4;
+  font-size: 22px;
+}
+.motion-history table {
+  width: 100%;
+  font-size: 12px;
+}
+.motion-history td {
+  padding: 4px;
+}
+.motion-regions {
+  display: flex;
+  gap: 6px;
+  margin: 10px 0;
+  flex-wrap: wrap;
+}
+
+.motion-location {
+  padding: 12px;
+  margin: 12px 0;
+  border: 1px solid #81744a;
+  border-radius: 8px;
+  background: #202d30;
+}
+.motion-location [data-motion-location] {
+  color: #ffdb75;
+  font:
+    600 15px ui-monospace,
+    monospace;
+  margin: 8px 0;
+}
+.motion-location [data-motion-pick-status] {
+  font-size: 12px;
+  line-height: 1.5;
+}
+.motion-location form {
+  display: grid;
+  gap: 8px;
+}
+.motion-location input {
+  width: 100%;
+  box-sizing: border-box;
+}
+.motion-location [aria-pressed='true'] {
+  outline: 2px solid #ffdb75;
+}
+.motion-location [hidden] {
+  display: none !important;
+}
+.motion-map-summary {
+  border-left: 3px solid #77d1c4;
+  padding-left: 10px;
+  margin: 16px 0;
+}
+.motion-history h3.motion-section-title {
+  font-size: 16px;
+  margin-top: 18px;
+}
+.motion-period-note {
+  color: #e8c987;
+}

@@ -4,6 +4,7 @@ import { divergingColor } from './locationModel.js';
 import { validateRaster, sampleRaster } from './raster.js';
 
 const ROOT = '/reference-data/heavenwatch/';
+const PERIOD_ROOT = '/reference-data/motion-periods/';
 
 export function createGroundMotionLayer() {
   let viewer,
@@ -21,6 +22,10 @@ export function createGroundMotionLayer() {
     opacity = 0.7,
     generation = 0,
     error = null;
+  let mapPeriod = 'year',
+    periodManifest,
+    periodPromise;
+  const periodImagery = [];
   const listeners = new Set();
   const values = new Map();
   const controller = new AbortController();
@@ -54,7 +59,33 @@ export function createGroundMotionLayer() {
     }
     return manifestPromise;
   }
+  async function readPeriods() {
+    if (!periodPromise)
+      periodPromise = fetch(PERIOD_ROOT + 'manifest.json', {
+        signal: controller.signal,
+      })
+        .then(async (response) => {
+          if (!response.ok)
+            throw Error('Permian change maps are not installed');
+          const data = await response.json();
+          if (data.schemaVersion !== 1 || !Array.isArray(data.variants))
+            throw Error('Invalid period manifest');
+          data.variants
+            .filter((item) => item.available)
+            .forEach(validateRaster);
+          periodManifest = data;
+          return data;
+        })
+        .catch((error) => {
+          periodPromise = null;
+          throw error;
+        });
+    return periodPromise;
+  }
   function removeImagery() {
+    for (const item of periodImagery.splice(0))
+      if (viewer && !viewer.isDestroyed())
+        viewer.imageryLayers.remove(item, true);
     if (imagery && viewer && !viewer.isDestroyed())
       viewer.imageryLayers.remove(imagery, true);
     imagery = null;
@@ -74,6 +105,36 @@ export function createGroundMotionLayer() {
   }
   async function show() {
     const intent = ++generation;
+    if (coverage === 'permian') {
+      const data = await readPeriods();
+      const rasters = data.variants.filter(
+        (item) => item.period === mapPeriod && item.available,
+      );
+      if (!rasters.length)
+        throw Error('No observations available for this map period');
+      const providers = await Promise.all(
+        rasters.map((item) =>
+          Cesium.SingleTileImageryProvider.fromUrl(PERIOD_ROOT + item.image, {
+            rectangle: Cesium.Rectangle.fromDegrees(...item.bounds),
+            credit: new Cesium.Credit(
+              'NASA OPERA · HeavenWatch dated displacement · Permian pilot',
+            ),
+          }),
+        ),
+      );
+      if (destroyed || intent !== generation || !enabled) return;
+      removeImagery();
+      for (const provider of providers) {
+        const item = viewer.imageryLayers.addImageryProvider(provider);
+        item.alpha = opacity;
+        periodImagery.push(item);
+      }
+      referenceValue = null;
+      error = null;
+      render();
+      notify();
+      return;
+    }
     if (coverage === 'us') {
       const provider = new Cesium.UrlTemplateImageryProvider({
         url: `/api/reference/ground-motion/tiles/${direction === 'ascending' ? 'asc' : 'desc'}/{z}/{x}/{y}.png`,
@@ -203,6 +264,21 @@ export function createGroundMotionLayer() {
       return true;
     },
     readManifest,
+    readPeriods,
+    async setMapPeriod(value) {
+      if (!['month', 'year', 'five'].includes(value))
+        throw Error('This map period is unavailable');
+      const previous = mapPeriod;
+      mapPeriod = value;
+      try {
+        if (enabled && coverage === 'permian') await show();
+        else notify();
+      } catch (error) {
+        mapPeriod = previous;
+        notify();
+        throw error;
+      }
+    },
     subscribe(listener) {
       listeners.add(listener);
       return () => listeners.delete(listener);
@@ -218,13 +294,23 @@ export function createGroundMotionLayer() {
         referenceValue,
         coverage,
         direction,
+        mapPeriod,
+        periodManifest,
       };
     },
     async setCoverage(value) {
-      if (!['us', 'crane'].includes(value)) throw Error('Unknown coverage');
+      if (!['us', 'crane', 'permian'].includes(value))
+        throw Error('Unknown coverage');
+      const previous = coverage;
       coverage = value;
-      if (enabled) await show();
-      else notify();
+      try {
+        if (enabled) await show();
+        else notify();
+      } catch (error) {
+        coverage = previous;
+        notify();
+        throw error;
+      }
     },
     async setDirection(value) {
       if (!['ascending', 'descending'].includes(value))
@@ -256,10 +342,24 @@ export function createGroundMotionLayer() {
       if (!Number.isFinite(value)) return;
       opacity = Math.max(0, Math.min(1, value));
       if (imagery) imagery.alpha = opacity;
+      for (const item of periodImagery) item.alpha = opacity;
       render();
       notify();
     },
     async flyTo(region = 'us') {
+      if (coverage === 'permian') {
+        const data = await readPeriods();
+        const raster = data.variants.find(
+          (item) => item.available && item.area === region,
+        );
+        viewer.camera.flyTo({
+          destination: Cesium.Rectangle.fromDegrees(
+            ...(raster?.bounds || [-104.1, 30.95, -102.15, 31.95]),
+          ),
+          duration: 1.5,
+        });
+        return;
+      }
       if (coverage === 'us') {
         viewer.camera.flyTo({
           destination: Cesium.Rectangle.fromDegrees(
@@ -282,6 +382,32 @@ export function createGroundMotionLayer() {
       });
     },
     async sample(longitude, latitude) {
+      if (coverage === 'permian') {
+        const data = await readPeriods();
+        for (const variant of data.variants.filter(
+          (item) => item.period === mapPeriod && item.available,
+        )) {
+          const [w, s, e, n] = variant.bounds;
+          if (longitude < w || longitude >= e || latitude <= s || latitude > n)
+            continue;
+          const key = 'period:' + variant.id;
+          if (!values.has(key)) {
+            const response = await fetch(PERIOD_ROOT + variant.values, {
+              signal: controller.signal,
+            });
+            if (!response.ok) throw Error('Change values unavailable');
+            values.set(key, await response.arrayBuffer());
+          }
+          return {
+            ...sampleRaster(variant, values.get(key), longitude, latitude),
+            units: 'mm LOS',
+            startDate: variant.startDate,
+            endDate: variant.endDate,
+            area: variant.name,
+          };
+        }
+        return { status: 'outside', units: 'mm LOS' };
+      }
       if (coverage === 'us')
         return {
           status: 'history',
@@ -307,9 +433,11 @@ export function createGroundMotionLayer() {
         count: enabled ? 1 : 0,
         source: 'NASA OPERA · historical snapshot',
         coverage:
-          coverage === 'us'
-            ? 'US / ASF coverage · long-term LOS mm/year'
-            : 'Crane County · 2016–2025 · LOS mm/year',
+          coverage === 'permian'
+            ? 'Permian pilot · dated LOS change in mm'
+            : coverage === 'us'
+              ? 'US / ASF coverage · long-term LOS mm/year'
+              : 'Crane County · 2016–2025 · LOS mm/year',
         error,
       };
     },

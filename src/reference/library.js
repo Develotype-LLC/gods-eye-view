@@ -16,18 +16,33 @@ export function mountReferenceLibrary({ viewer, dataManager, layer, catalog }) {
   legend.id = 'ground-motion-legend';
   legend.hidden = true;
   legend.setAttribute('aria-label', 'Ground movement legend');
-  legend.innerHTML = `<header><strong>GROUND MOVEMENT</strong><button data-hide aria-label="Hide ground movement">✕</button></header><small data-motion-heading>NASA OPERA / ASF · long-term LOS velocity</small><label>Measurement<select data-variant><option value="displacement">Full displacement</option><option value="short_wavelength_displacement">Short wavelength</option></select></label><div class="ref-colorbar"></div><div class="ref-scale"><span>−30 · away</span><span>0</span><span>+30 · toward</span></div><small>mm/year · relative to satellite · colors saturate</small><label>Opacity<input data-opacity type="range" min="0" max="1" step="0.05" value="0.7"></label><div class="motion-regions"><button data-pick-motion aria-pressed="true">Pause map picking</button></div><div data-motion-reference hidden><button data-set-motion-reference>Set movement reference on map</button><button data-clear-motion-reference>Clear movement reference</button><p data-motion-reference-status>Absolute velocity · no reference selected.</p></div><p data-sample role="status">Click inside the colored area to sample a pixel.</p><button data-library>Sources & layer library</button>`;
+  legend.innerHTML = `<header><strong>GROUND MOVEMENT</strong><button data-hide aria-label="Hide ground movement">✕</button></header><small data-motion-heading>NASA OPERA / ASF · long-term LOS velocity</small><label>Measurement<select data-variant><option value="displacement">Full displacement</option><option value="short_wavelength_displacement">Short wavelength</option></select></label><div class="ref-colorbar"></div><div class="ref-scale"><span>−30 · away</span><span>0</span><span>+30 · toward</span></div><small data-map-units>mm/year · relative to satellite · colors saturate</small><label>Opacity<input data-opacity type="range" min="0" max="1" step="0.05" value="0.7"></label><div data-motion-reference hidden><button data-set-motion-reference>Set movement reference on map</button><button data-clear-motion-reference>Clear movement reference</button><p data-motion-reference-status>Absolute velocity · no reference selected.</p></div><p data-sample role="status">Click inside the colored area to sample a pixel.</p><button data-library>Sources & layer library</button>`;
   document.body.append(legend);
+  const locationPanel = document.createElement('section');
+  locationPanel.className = 'motion-location';
+  locationPanel.setAttribute('aria-label', 'Selected ground-movement location');
+  locationPanel.innerHTML = `<strong>Selected location</strong><p data-motion-location aria-live="polite">No location selected</p>
+    <div class="motion-regions"><button data-pick-motion aria-pressed="true">Pick location on map</button><button data-cancel-pick>Cancel picking</button><button data-locate-motion disabled>Zoom to point</button><button data-clear-motion disabled>Clear point</button></div>
+    <p data-motion-pick-status role="status">Click once on the map to select a point.</p>
+    <form data-motion-location-form><label>Latitude, longitude<input aria-label="Ground movement coordinates" placeholder="31.40070, -102.60490" required></label><button type="submit">Use coordinates</button></form>`;
+  legend.insertBefore(
+    locationPanel,
+    legend.querySelector('[data-variant]').parentElement,
+  );
   const historyPanel = mountMotionHistoryPanel(legend, layer);
   const detail = dialog.querySelector('.ref-detail'),
     nav = dialog.querySelector('nav');
   const sample = legend.querySelector('[data-sample]');
+  locationPanel.insertBefore(sample, locationPanel.querySelector('form'));
   let selected = 'texas-wells',
     disposed = false,
     selection = 0,
     sampleIntent = 0;
   let motionPicking = true,
-    pickingReference = false;
+    pickingReference = false,
+    selectedMotionPoint = null,
+    motionMarker = null,
+    lastCoverage = layer.getState().coverage + ':' + layer.getState().mapPeriod;
   const abort = new AbortController();
   const on = (el, type, fn) =>
     el.addEventListener(type, fn, { signal: abort.signal });
@@ -67,10 +82,97 @@ export function mountReferenceLibrary({ viewer, dataManager, layer, catalog }) {
   on(legend.querySelector('[data-opacity]'), 'input', (event) =>
     layer.setOpacity(Number(event.target.value)),
   );
+  function updateSelection(point) {
+    selectedMotionPoint = point;
+    if (motionMarker) viewer.entities.remove(motionMarker);
+    motionMarker = null;
+    if (point) {
+      motionMarker = viewer.entities.add({
+        name: 'Selected ground-movement location',
+        position: Cesium.Cartesian3.fromDegrees(
+          point.longitude,
+          point.latitude,
+        ),
+        point: {
+          pixelSize: 18,
+          color: Cesium.Color.fromCssColorString('#ed63e1'),
+          outlineColor: Cesium.Color.WHITE,
+          outlineWidth: 3,
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        },
+        label: {
+          text: 'Surface change · selected point',
+          font: '13px sans-serif',
+          fillColor: Cesium.Color.WHITE,
+          showBackground: true,
+          backgroundColor: Cesium.Color.fromCssColorString('#14242b'),
+          pixelOffset: new Cesium.Cartesian2(0, -30),
+          heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+          disableDepthTestDistance: Number.POSITIVE_INFINITY,
+        },
+      });
+    }
+    locationPanel.querySelector('[data-motion-location]').textContent = point
+      ? `${point.latitude.toFixed(5)}, ${point.longitude.toFixed(5)}`
+      : 'No location selected';
+    locationPanel.querySelector('input').value = point
+      ? `${point.latitude.toFixed(5)}, ${point.longitude.toFixed(5)}`
+      : '';
+    locationPanel.querySelector('[data-locate-motion]').disabled = !point;
+    locationPanel.querySelector('[data-clear-motion]').disabled = !point;
+    viewer.scene.requestRender();
+    sync();
+  }
   on(legend.querySelector('[data-pick-motion]'), 'click', () => {
-    motionPicking = !motionPicking;
+    motionPicking = true;
     pickingReference = false;
     sync();
+  });
+  on(legend.querySelector('[data-cancel-pick]'), 'click', () => {
+    motionPicking = false;
+    pickingReference = false;
+    sync();
+  });
+  on(legend.querySelector('[data-clear-motion]'), 'click', () => {
+    sampleIntent++;
+    motionPicking = false;
+    pickingReference = false;
+    historyPanel.clear();
+    updateSelection(null);
+    sample.textContent = 'Point cleared. Choose a new location to inspect.';
+  });
+  on(legend.querySelector('[data-locate-motion]'), 'click', () => {
+    if (selectedMotionPoint)
+      viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(
+          selectedMotionPoint.longitude,
+          selectedMotionPoint.latitude,
+          15000,
+        ),
+        duration: 1,
+      });
+  });
+  on(legend.querySelector('[data-motion-location-form]'), 'submit', (event) => {
+    event.preventDefault();
+    const parts = locationPanel
+      .querySelector('input')
+      .value.split(',')
+      .map((value) => value.trim());
+    const [latitude, longitude] = parts.map(Number);
+    if (
+      parts.length !== 2 ||
+      parts.some((value) => !value) ||
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude) ||
+      Math.abs(latitude) > 85 ||
+      Math.abs(longitude) > 180
+    ) {
+      locationPanel.querySelector('[data-motion-pick-status]').textContent =
+        'Enter latitude, longitude in decimal degrees (latitude −85 to 85).';
+      return;
+    }
+    void inspectMotionPoint(longitude, latitude);
   });
   on(legend.querySelector('[data-set-motion-reference]'), 'click', () => {
     motionPicking = true;
@@ -93,12 +195,33 @@ export function mountReferenceLibrary({ viewer, dataManager, layer, catalog }) {
   );
   function sync() {
     const state = layer.getState();
-    if (state.coverage === 'us') pickingReference = false;
+    if (state.coverage !== 'crane') pickingReference = false;
     legend.querySelector('[data-motion-reference]').hidden =
       state.coverage !== 'crane';
-    legend.querySelector('[data-pick-motion]').textContent = motionPicking
-      ? 'Pause map picking'
-      : 'Inspect location on map';
+    legend.querySelector('[data-pick-motion]').textContent = selectedMotionPoint
+      ? 'Change location on map'
+      : 'Pick location on map';
+    legend.querySelector('[data-cancel-pick]').hidden = !motionPicking;
+    locationPanel.querySelector('[data-motion-pick-status]').textContent =
+      motionPicking
+        ? pickingReference
+          ? 'Click a pixel to set the archive movement reference.'
+          : 'Click once on the map. The selected point stays locked until you choose Change location.'
+        : selectedMotionPoint
+          ? 'Point locked. Use Change location or edit the coordinates below.'
+          : 'Choose Pick location on map or enter coordinates.';
+    if (motionMarker)
+      motionMarker.show = dataManager.isEnabled('ground-motion');
+    if (lastCoverage !== state.coverage + ':' + state.mapPeriod) {
+      lastCoverage = state.coverage + ':' + state.mapPeriod;
+      sampleIntent++;
+      historyPanel.clear();
+      if (selectedMotionPoint)
+        void inspectMotionPoint(
+          selectedMotionPoint.longitude,
+          selectedMotionPoint.latitude,
+        );
+    }
     legend
       .querySelector('[data-pick-motion]')
       .setAttribute('aria-pressed', String(motionPicking));
@@ -108,17 +231,26 @@ export function mountReferenceLibrary({ viewer, dataManager, layer, catalog }) {
         : 'Absolute velocity · no reference selected.';
     legend.hidden = !dataManager.isEnabled('ground-motion');
     legend.querySelector('[data-motion-heading]').textContent =
-      state.coverage === 'us'
-        ? 'NASA OPERA / ASF · US velocity overview · dates vary by frame'
-        : 'Crane archive · 2016-08-01 → 2025-12-30';
+      state.coverage === 'permian'
+        ? 'Permian pilot · measured displacement · historical archive'
+        : state.coverage === 'us'
+          ? 'NASA OPERA / ASF · US velocity overview · dates vary by frame'
+          : 'Crane archive · 2016-08-01 → 2025-12-30';
     const relative = state.coverage === 'crane' && state.reference;
     legend.querySelector('.ref-colorbar').style.background =
-      state.coverage === 'us' || relative
+      state.coverage !== 'crane' || relative
         ? 'linear-gradient(90deg,#278ec4,#ebe7cb,#d74e2b)'
         : '';
-    legend.querySelector('.ref-scale').innerHTML = relative
-      ? '<span>−30 · below reference rate</span><span>0</span><span>+30 · above reference rate</span>'
-      : '<span>−30 · away</span><span>0</span><span>+30 · toward</span>';
+    legend.querySelector('[data-map-units]').textContent =
+      state.coverage === 'permian'
+        ? 'mm LOS change · fixed ±100 mm scale · colors saturate'
+        : 'mm/year · relative to satellite · colors saturate';
+    legend.querySelector('.ref-scale').innerHTML =
+      state.coverage === 'permian'
+        ? '<span>−100 · away</span><span>0</span><span>+100 · toward</span>'
+        : relative
+          ? '<span>−30 · below reference rate</span><span>0</span><span>+30 · above reference rate</span>'
+          : '<span>−30 · away</span><span>0</span><span>+30 · toward</span>';
     if (state.error) sample.textContent = state.error;
     legend.querySelector('[data-variant]').value = state.variantId;
     legend.querySelector('[data-opacity]').value = state.opacity;
@@ -452,35 +584,37 @@ export function mountReferenceLibrary({ viewer, dataManager, layer, catalog }) {
     const ray = viewer.camera.getPickRay(event.position);
     const point = ray && viewer.scene.globe.pick(ray, viewer.scene);
     if (!point) return;
-    const geo = Cesium.Cartographic.fromCartesian(point),
-      intent = ++sampleIntent;
-    if (layer.getState().coverage === 'us') {
-      sample.textContent = 'Point history shown above.';
-      void historyPanel.inspect(
-        Cesium.Math.toDegrees(geo.longitude),
-        Cesium.Math.toDegrees(geo.latitude),
-      );
-      return;
-    }
+    const geo = Cesium.Cartographic.fromCartesian(point);
+    const longitude = Cesium.Math.toDegrees(geo.longitude),
+      latitude = Cesium.Math.toDegrees(geo.latitude);
     if (pickingReference) {
       pickingReference = false;
+      motionPicking = false;
       try {
-        await layer.setReference({
-          longitude: Cesium.Math.toDegrees(geo.longitude),
-          latitude: Cesium.Math.toDegrees(geo.latitude),
-        });
+        await layer.setReference({ longitude, latitude });
       } catch (error) {
         sample.textContent = error.message;
       }
+      sync();
+      return;
+    }
+    void inspectMotionPoint(longitude, latitude);
+  }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+  async function inspectMotionPoint(longitude, latitude) {
+    const intent = ++sampleIntent;
+    motionPicking = false;
+    pickingReference = false;
+    updateSelection({ longitude, latitude });
+    if (layer.getState().coverage === 'us') {
+      sample.textContent =
+        'The chart reports change at the selected map marker.';
+      await historyPanel.inspect(longitude, latitude);
       return;
     }
     const variant = layer.getState().variantId;
     sample.textContent = 'Reading pixel…';
     try {
-      const result = await layer.sample(
-        Cesium.Math.toDegrees(geo.longitude),
-        Cesium.Math.toDegrees(geo.latitude),
-      );
+      const result = await layer.sample(longitude, latitude);
       if (
         disposed ||
         sampleIntent !== intent ||
@@ -489,10 +623,14 @@ export function mountReferenceLibrary({ viewer, dataManager, layer, catalog }) {
         return;
       sample.textContent =
         result.status === 'value'
-          ? `${result.value >= 0 ? '+' : ''}${result.value.toFixed(2)} mm/year LOS · ${result.latitude.toFixed(5)}, ${result.longitude.toFixed(5)}`
+          ? `${result.value >= 0 ? '+' : ''}${result.value.toFixed(2)} ${result.units || 'mm/year LOS'} · ${result.latitude.toFixed(5)}, ${result.longitude.toFixed(5)}`
           : result.status === 'no-data'
             ? 'No valid observation at this pixel. This is not zero motion.'
-            : 'Outside the installed Crane County coverage.';
+            : layer.getState().coverage === 'permian'
+              ? 'Outside the two installed Permian pilot footprints. Use Crane / Tubbs or Toyah to zoom to available pixels.'
+              : 'Outside the installed Crane County coverage.';
+      if (result.startDate)
+        sample.textContent += ` · ${result.area}: ${result.startDate} → ${result.endDate}`;
       const base = layer.getState().referenceValue;
       if (result.status === 'value' && Number.isFinite(base))
         sample.textContent += ` · ${(result.value - base).toFixed(2)} mm/year relative to movement reference`;
@@ -500,7 +638,7 @@ export function mountReferenceLibrary({ viewer, dataManager, layer, catalog }) {
       if (!disposed && sampleIntent === intent)
         sample.textContent = error.message;
     }
-  }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+  }
   list();
   void showDetail(REFERENCE_CATALOG[0]);
   sync();
@@ -510,6 +648,8 @@ export function mountReferenceLibrary({ viewer, dataManager, layer, catalog }) {
     unsubscribe();
     unactivity();
     picker.destroy();
+    if (motionMarker && !viewer.isDestroyed())
+      viewer.entities.remove(motionMarker);
     historyPanel.destroy();
     dialog.remove();
     legend.remove();
