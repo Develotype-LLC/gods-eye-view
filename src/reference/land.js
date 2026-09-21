@@ -75,13 +75,27 @@ export function createLandLayer() {
     if (!b || b.length !== 4 || !b.every(Number.isFinite)) return;
     const dx = Math.max((b[2] - b[0]) * 0.05, 0.002),
       dy = Math.max((b[3] - b[1]) * 0.05, 0.002);
+    const rectangle = Cesium.Rectangle.fromDegrees(
+      b[0] - dx,
+      b[1] - dy,
+      b[2] + dx,
+      b[3] + dy,
+    );
+    const position = viewer.camera.getRectangleCameraCoordinates(rectangle);
+    if (!position) return;
+    const destination = Cesium.Cartographic.fromCartesian(position);
+    const terrainHeight = viewer.scene.globe.getHeight(destination);
+    destination.height = Math.max(
+      destination.height,
+      (Number.isFinite(terrainHeight) ? terrainHeight : 3000) + 1200,
+    );
     viewer.camera.flyTo({
-      destination: Cesium.Rectangle.fromDegrees(
-        b[0] - dx,
-        b[1] - dy,
-        b[2] + dx,
-        b[3] + dy,
+      destination: Cesium.Cartesian3.fromRadians(
+        destination.longitude,
+        destination.latitude,
+        destination.height,
       ),
+      orientation: { heading: 0, pitch: -Math.PI / 2, roll: 0 },
       duration: 1.2,
     });
   }
