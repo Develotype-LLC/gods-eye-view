@@ -876,3 +876,23 @@ body.landman-mode #cctv-sync-chip {
     width: calc(100vw - 24px);
   }
 }
+#pipeline-panel textarea,
+#pipeline-panel select {
+  width: 100%;
+  box-sizing: border-box;
+  color: #e0eeeb;
+  background: #132226;
+  border: 1px solid #435655;
+  border-radius: 5px;
+  padding: 9px;
+  font: inherit;
+}
+#pipeline-panel [data-drawing] {
+  color: #f3c375;
+}
+#pipeline-panel [data-exclusions] > div {
+  margin: 8px 0;
+}
+#pipeline-panel [data-show-context] {
+  width: auto;
+}

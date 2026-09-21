@@ -1,21 +1,39 @@
-# Produced-water pipeline planner
+# LONG-Haul: produced-water routing
 
-Open the Landman workspace and choose **Plan a produced-water pipeline**. Pick source and delivery points on the map or enter latitude, longitude. Endpoints must be in Texas and 0.25–50 km apart. The Permian example is an illustrative location pair, not a client project.
+Open the Landman workspace and choose **LONG-Haul · pipeline routing**. Load the Permian example or pick source and delivery points. Add up to eight required waypoints by clicking the map or editing the ordered coordinate lines. Draw an exclusion with three or more vertices and finish it; remove an area to revise it. Exclusions are hard constraints, including for endpoints and waypoints.
 
-Set flow, inside diameter, density, viscosity, roughness, combined pump/motor efficiency, electricity tariff, annual hours, outlet pressure and screening corridor width. Compare seven candidate alignments, then adjust the owner-name priority slider. Select a candidate to view its elevation profile, pumping electricity estimate, intersected parcels, appraisal names and source dates. Drafts remain in the current browser; GeoJSON exports include assumptions and limitations.
+## Preferences and alternatives
 
-## Calculation and evidence
+Prefer, remain neutral to, or discourage routes parallel to mapped pipelines. An optional operator-name substring narrows that preference. Default corridor discount is 30%; this is an editable search assumption, not a verified saving. Parallel proximity means within 100 m with alignment cosine at least 0.85. The map shows pipeline context in purple, roads in gold, rail in orange, waterways in blue, exclusions in red and the finite study boundary in white.
 
-Seven deterministic alignments (direct, four doglegs, two S-shaped candidates) are compared. This is preliminary candidate screening, not a global routing optimizer. Each route uses 25 sampled Re:Earth ellipsoidal terrain heights. Darcy–Weisbach friction uses Colebrook for turbulent flow and 64/Re for laminar flow. Transitional flow is flagged. Source pressure is assumed zero gauge; required head accounts for accumulated friction, sampled crests and outlet pressure, with no energy recovery. Electrical power is rho*g*Q*head / combined efficiency; annual electricity cost multiplies power by hours and tariff.
+Crossing penalties are **equivalent additional kilometres**, not construction quotations: defaults highway 5 km, other road 0.5 km, rail 8 km, waterway 3 km. Actual segment intersections produce penalties; parallel travel does not count as a crossing. Reported intersections within 10 m of one another and of the same class are grouped. Divided roads can yield more than one event. These are mapped geometric crossing events, not engineered bore counts.
 
-Method reference: [DOE Fluid Flow handbook](https://www.energy.gov/ehss/articles/doe-hdbk-10123-92).
+An eight-neighbor A* grid search generates distance-first, infrastructure-balanced, and stronger crossing-avoidance alternatives. Every alternative honors exclusions and ordered waypoints. The grid is adaptive, with minimum 75 m spacing; its resolution is shown. A finite study envelope extends beyond the input chain by 0.015–0.12 degrees. Routes are approximate grid paths, not global optima or buildable centerlines. Alternatives may coincide. Collinear vertices are compacted without smoothing through obstacles.
 
-PostGIS intersects each corridor with the active TxGIO appraisal parcel snapshots already imported for Permian and Palo Duro. Unique normalized appraisal names are counted across parcels; aliases may remain separate and appraisal names are not verified legal parties or contract counts. Coverage measures route centerline coverage by parcel geometry, not legal ROW availability or coverage of the entire corridor width.
+Routes are then evaluated for pumping electricity and appraisal owners. **Terrain and owner acquisition costs do not yet participate in the path search itself.** The owner/energy slider compares eligible candidates after routing. It does not alter the search. Owner groups, secured ROW, wetland constraints and client-specific rights remain future work.
 
-Automatic rankings require complete terrain, at least 99.999% centerline parcel coverage, no unknown owners and an untruncated query. Incomplete candidates remain visible for manual inspection. Results are capped at 3,000 intersected parcels per candidate. The weighted score normalizes electricity cost and owner-name count over eligible candidates; it does not monetize acquisition costs.
+## Infrastructure sources
 
-## Exclusions and next increments
+- Texas RRC public GIS **Pipelines layer 13**: operator-submitted mapped linework with operator, commodity, status and T-4 permit. Layer 14 is transmission-only and is not used. The query paginates with a 6,000-record limit and does not use truncated results. [RRC mapping context](https://www.rrc.texas.gov/pipeline-safety/permitting-and-mapping/mapping/).
+- OpenStreetMap via public Overpass endpoints: highways, railways and river/stream/canal/drain ways. Bounded queries, timeouts and a 10,000-way cap; incomplete or refused responses remain unavailable, never authoritative empty inventories. [OSM attribution](https://www.openstreetmap.org/copyright).
+- Successful inventories are cached for one hour, capped at eight study areas and two concurrent retrievals. Combined geometry cap 150,000 vertices. Context rendering is capped at 2,000 features, but routing uses the complete returned inventory. Retrieval times, availability and source URLs accompany exports.
 
-No construction cost, easement cost, maintenance, crossing clearance, road/rail/wetland avoidance, existing corridor preference, existing owner agreements, burial depth, fittings, solids/gas, surge, pump curves, station spacing, pipe pressure rating or surveyed route is modeled. Sparse terrain samples can miss crests. Current defaults are editable assumptions, not measured produced-water properties.
+Mapped pipelines do not establish available capacity, access, active operation or permission to build alongside them. Operator preference is not proof of client ownership. OSM data is not a complete crossing inventory. Draw exclusions for known restrictions not represented in the sources.
 
-Next increments: editable waypoints and exclusion areas; client-owned/secured parcels; terrain/ownership cost-surface routing; crossings and constructability constraints; shared project alternatives; verified party and easement workflow.
+## Terrain, land and pumping
+
+The interactive chain supports 50 m–250 km; exceptionally dense or large inventories can require a smaller study. Generated routes are limited to 1,500 vertices and 400 km in the parcel API. Parcel queries are capped at 3,000 intersections per candidate, explicitly reported as truncated. No silent sampling of owners.
+
+Terrain sampling preserves every route vertex and samples intervening segments with target spacing of at least 250 m, increased for long routes. Heights are fetched in 64-point batches with visible progress and cancellation. Actual maximum sample spacing is shown. Missing samples prevent a pumping estimate. Re:Earth heights are modelled ellipsoidal heights, not a survey.
+
+Darcy–Weisbach friction uses Colebrook for turbulent flow and 64/Re for laminar flow. Source pressure is assumed zero gauge. Required head accounts for accumulated friction, sampled crests and outlet pressure, with no energy recovery. Electrical power is rho*g*Q*head / combined pump/motor efficiency. Annual cost multiplies power by operating hours and tariff. [DOE Fluid Flow handbook](https://www.energy.gov/ehss/articles/doe-hdbk-10123-92).
+
+TxGIO appraisal snapshots provide corridor-intersecting parcels and normalized names; aliases can remain separate. Names are not verified parties or contract counts. Coverage measures centerline coverage by parcel geometry, not legal ROW availability or coverage of the whole corridor width. Automatic comparison badges require available infrastructure sources, complete terrain, at least 99.999% centerline parcel coverage, no unknown owners and an untruncated query.
+
+Construction, ROW and maintenance dollars, burial depth, fittings, solids/gas, surge, pump curves, station spacing, pressure rating, wetlands, permits and engineering clearances are not modeled. Sparse samples can miss crests. Defaults are assumptions, not measured produced-water properties.
+
+## Persistence and checks
+
+Drafts remain in the current browser and include endpoints, waypoints, exclusions, routing preferences and operating assumptions. Previous pipeline drafts remain loadable. GeoJSON exports retain selected route geometry, crossing details, assumptions, source availability, search bounds/resolution and limitations.
+
+Automated tests cover path changes caused by crossing penalties and corridor preferences, operator filtering, required waypoint preservation, polygon avoidance, endpoint rejection, cancellation, input limits and unavailable-source handling, alongside the original hydraulic and ranking checks.

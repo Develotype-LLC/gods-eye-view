@@ -1,5 +1,6 @@
 import pg from 'pg';
 import { analyzeCorridors } from './pipeline.js';
+import { fetchInfrastructure } from './longhaulInfrastructure.js';
 import { parseTexasBox } from './texas.js';
 export const LAND_ROLES = [
   'upstream',
@@ -247,6 +248,11 @@ export function landProxy({ pool: providedPool } = {}) {
       try {
         const u = new URL(req.url, 'http://local');
         if (req.method === 'GET') {
+          if (u.pathname === '/infrastructure')
+            return reply(
+              200,
+              await fetchInfrastructure(u.searchParams.get('bbox')),
+            );
           if (u.pathname === '/catalog') return reply(200, await metadata());
           if (u.pathname === '/owners')
             return reply(200, await owners(u.searchParams));
@@ -278,7 +284,10 @@ export function landProxy({ pool: providedPool } = {}) {
         let raw = '';
         for await (const chunk of req) {
           raw += chunk;
-          if (Buffer.byteLength(raw) > 16000)
+          if (
+            Buffer.byteLength(raw) >
+            (u.pathname === '/route-corridors' ? 300000 : 16000)
+          )
             return reply(413, { error: 'Request too large' });
         }
         let body;

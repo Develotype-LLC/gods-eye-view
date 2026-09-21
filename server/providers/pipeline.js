@@ -18,7 +18,7 @@ export function validateCorridors(body) {
       ids.has(r.id) ||
       !Array.isArray(r.coordinates) ||
       r.coordinates.length < 2 ||
-      r.coordinates.length > 32
+      r.coordinates.length > 1500
     )
       throw Error('Invalid route geometry');
     ids.add(r.id);
@@ -36,7 +36,7 @@ export function validateCorridors(body) {
     if (
       r.coordinates
         .slice(1)
-        .reduce((n, p, i) => n + distance(r.coordinates[i], p), 0) > 75000
+        .reduce((n, p, i) => n + distance(r.coordinates[i], p), 0) > 400000
     )
       throw Error('Invalid route length');
   }
