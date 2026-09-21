@@ -37,3 +37,25 @@ Construction, ROW and maintenance dollars, burial depth, fittings, solids/gas, s
 Drafts remain in the current browser and include endpoints, waypoints, exclusions, routing preferences and operating assumptions. Previous pipeline drafts remain loadable. GeoJSON exports retain selected route geometry, crossing details, assumptions, source availability, search bounds/resolution and limitations.
 
 Automated tests cover path changes caused by crossing penalties and corridor preferences, operator filtering, required waypoint preservation, polygon avoidance, endpoint rejection, cancellation, input limits and unavailable-source handling, alongside the original hydraulic and ranking checks.
+
+### Selectable operating scenarios
+
+LONG-Haul now starts with a selectable scenario rather than an expanded numeric form:
+small gathering (20,000 bbl/day, 8-inch nominal), gathering (50,000, 12-inch),
+trunk line (100,000, 16-inch; fresh-screen default), and regional transfer (250,000,
+24-inch). These are analyst-selected screening combinations, not observed industry
+averages, rated capacities, or recommendations for construction.
+
+Pipe dimensions use HDPE IPS DR11 average inside diameters of 6.963, 10.293,
+12.915, and 19.374 inches from [Chevron Phillips PP501 Table 2](https://www.cpchem.com/sites/default/files/2022-03/PP%20501%20Driscoplex%204000%204100%20Water%20Pipe%20Brochure.pdf).
+This dimensional reference does not establish suitability for a particular
+produced-water chemistry, temperature, pressure or surge condition. Flow targets
+are assumptions; station spacing and pressure qualification remain outside the model.
+Shared planning assumptions retain density 1,100 kg/m³, viscosity 1.2 cP,
+roughness 0.0015 mm, combined efficiency 70%, electricity $0.10/kWh, annual
+operation 8,000 hours, delivery pressure 30 psig and corridor width 100 feet.
+All values remain editable under View or customize assumptions. Selecting a scenario
+replaces these operating values but retains ranking priority and route preferences.
+Changes invalidate old route results. Saved drafts retain their numeric values;
+legacy or edited values display as Custom unless they exactly match a scenario.
+Exports include scenario metadata when the values match, plus the actual assumptions.

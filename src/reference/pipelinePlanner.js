@@ -1,3 +1,4 @@
+import { OPERATING_PRESETS, matchOperatingPreset } from './pipelinePresets.js';
 import * as Cesium from 'cesium';
 import {
   ROUTING_DEFAULTS,
@@ -8,7 +9,6 @@ import {
   generateLonghaulRoutes,
 } from './longhaulRouting.js';
 import {
-  PIPELINE_DEFAULTS,
   distance,
   parseEndpoint,
   validateInputs,
@@ -35,7 +35,7 @@ export function mountPipelinePlanner({ viewer, openInspector }) {
   panel.setAttribute('aria-label', 'LONG-Haul produced-water routing');
   const fields = [
     ['flow', 'Flow · bbl/day', 1, 2000000, 1],
-    ['diameter', 'Pipe inside diameter · in', 2, 60, 0.1],
+    ['diameter', 'Pipe inside diameter · in', 2, 60, 0.001],
     ['density', 'Fluid density · kg/m³', 900, 1500, 1],
     ['viscosity', 'Dynamic viscosity · cP', 0.2, 100, 0.1],
     ['roughness', 'Pipe roughness · mm', 0, 5, 0.0001],
@@ -48,7 +48,7 @@ export function mountPipelinePlanner({ viewer, openInspector }) {
   panel.innerHTML = `<div class="pp-intro"><span class="pp-badge">PRODUCED WATER · PRELIMINARY</span><h3>LONG-Haul</h3><p>Plan produced-water corridors around infrastructure, crossings and land constraints.</p></div>
  <form data-form><fieldset><legend>1 · Set the route</legend><label>Source A · latitude, longitude<input data-a required placeholder="31.6783, -102.3688"></label><button type="button" data-pick="a">Pick source on map</button><label>Delivery B · latitude, longitude<input data-b required placeholder="31.7000, -102.3200"></label><button type="button" data-pick="b">Pick delivery on map</button><button type="button" data-stop>Stop picking</button><button type="button" data-example>Load Permian example</button><p data-points>Endpoints not set. Use map picks or coordinates.</p><label>Required waypoints · latitude, longitude, one per line<textarea data-waypoints rows="3" placeholder="Optional · visited in listed order"></textarea></label><button type="button" data-add-via>Add waypoint on map</button><button type="button" data-draw-exclusion>Draw exclusion area</button><button type="button" data-finish-exclusion hidden>Finish area</button><button type="button" data-undo-exclusion hidden>Undo vertex</button><p data-drawing role="status"></p><div data-exclusions></div></fieldset>
  <fieldset><legend>2 · Routing preferences</legend><label>Mapped pipeline corridors<select data-route="corridor"><option value="prefer">Prefer parallel corridors</option><option value="neutral">Neutral</option><option value="avoid">Discourage parallel corridors</option></select></label><label>Operator name contains · optional<input data-route="operator" placeholder="All mapped operators"></label><p>Operator filtering expresses a preference; it does not establish client ownership, permission, operating status or available capacity.</p><div class="pp-inputs"><label>Parallel-corridor discount · %<input data-route="discount" type="number" min="0" max="70" step="1" value="30" required></label><label>Highway crossing penalty · equivalent km<input data-route="majorRoad" type="number" min="0" max="100" step="0.1" value="5" required></label><label>Other road crossing · equivalent km<input data-route="road" type="number" min="0" max="100" step="0.1" value="0.5" required></label><label>Rail crossing · equivalent km<input data-route="rail" type="number" min="0" max="100" step="0.1" value="8" required></label><label>Waterway crossing · equivalent km<input data-route="water" type="number" min="0" max="100" step="0.1" value="3" required></label></div><p>These are route-search preferences, not dollar estimates. A 5 km penalty makes one crossing equivalent to 5 km of additional new route. Parallel means aligned within 100 m of a mapped pipeline.</p><label><input type="checkbox" data-show-context checked> Show routing infrastructure and study boundary</label></fieldset>
- <fieldset><legend>3 · Operating assumptions</legend><p>Editable screening assumptions, not measured fluid properties or a selected pipe specification.</p><div class="pp-inputs">${fields.map(([id, label, min, max, step]) => `<label>${label}<input data-input="${id}" type="number" min="${min}" max="${max}" step="${step}" value="${PIPELINE_DEFAULTS[id]}" required></label>`).join('')}</div></fieldset>
+ <fieldset><legend>3 · Operating assumptions</legend><label>Produced-water operating scenario<select data-operating-preset>${OPERATING_PRESETS.map((p) => `<option value="${p.id}">${p.label}</option>`).join('')}<option value="custom">Custom assumptions</option></select></label><p data-operating-summary aria-live="polite"></p><p>Starting scenarios, not rated capacity or an engineered pipe selection. Flow targets and operating values are planning assumptions.</p><details data-operating-details><summary>View or customize assumptions</summary><div class="pp-inputs">${fields.map(([id, label, min, max, step]) => `<label>${label}<input data-input="${id}" type="number" min="${min}" max="${max}" step="${step}" value="${OPERATING_PRESETS[0].inputs[id]}" required></label>`).join('')}</div><p>HDPE IPS DR11 dimensions use published average inside diameters. Confirm fluid compatibility, temperature, pressure, surge and pump stations for the project.</p><a href="https://www.cpchem.com/sites/default/files/2022-03/PP%20501%20Driscoplex%204000%204100%20Water%20Pipe%20Brochure.pdf" target="_blank" rel="noopener">Pipe dimension reference · Table 2</a></details></fieldset>
  <fieldset><legend>4 · Compare alternatives</legend><label>Balance: owner-name priority <output data-weight-label>50%</output><input data-input="weight" type="range" min="0" max="100" value="50"></label><div class="pp-scale"><span>Pumping cost</span><span>Fewer owner names</span></div><p>Relative ranking among these candidates. No global optimum, surveyed route, crossing clearance or secured ROW is implied.</p><button class="pp-primary" data-compare>Find route alternatives</button><button type="button" data-cancel hidden>Cancel analysis</button></fieldset></form>
  <p data-status role="status" aria-live="polite">Ready. Set endpoints, then add any required waypoints or exclusion areas. Interactive study chain: 50 m–250 km; large or dense source inventories may require a smaller study.</p><div class="pp-actions"><button data-save>Save draft here</button><button data-load>Load saved draft</button><button data-export disabled>Export selected route</button><button data-clear>Clear route</button></div><small>Drafts stay in this browser. Export a GeoJSON file to share a candidate and its assumptions.</small>
  <div data-results></div><div data-detail></div><details><summary>How estimates work and what is missing</summary><p>Single-phase, steady produced-water screening. Darcy–Weisbach friction with Colebrook turbulent friction (64/Re for laminar flow); hydraulic power divided by combined pump/motor efficiency. Source pressure is assumed to be 0 psi gauge. Head includes outlet pressure and sampled high points without energy recovery. Pipe diameter is inside diameter.</p><p>Terrain: Re:Earth modelled ellipsoidal heights sampled along every route segment, with spacing and progress shown. Between-sample crests, burial depth, fittings, gas, solids, transients, pump curves, pressure ratings and station spacing are not modelled. Annual cost is pumping electricity only; construction, easements and maintenance are excluded.</p><p>TxGIO appraisal owner names may represent different parties or aliases. Names are not a count of contracts. Unknown owner names and unmapped portions remain explicit. Routing uses a finite grid search with mapped RRC pipeline proximity and OSM road, rail and waterway crossing penalties. Drawn exclusions are hard constraints. Routes are searched for distance, infrastructure balance and stronger crossing avoidance, then evaluated for pumping and owners. Terrain and ownership do not yet guide the path search itself. Wetlands, permits, subsurface utilities and engineering clearances are not evaluated. Missing source inventories remain explicit.</p><a href="https://www.energy.gov/ehss/articles/doe-hdbk-10123-92" target="_blank" rel="noopener">DOE fluid-flow method reference</a></details>`;
@@ -131,6 +131,34 @@ export function mountPipelinePlanner({ viewer, openInspector }) {
       ),
     );
   }
+  function updateOperatingSummary() {
+    const values = Object.fromEntries(
+      fields.map(([id]) => [
+        id,
+        Number(panel.querySelector(`[data-input="${id}"]`).value),
+      ]),
+    );
+    const preset = matchOperatingPreset(values);
+    panel.querySelector('[data-operating-preset]').value =
+      preset?.id || 'custom';
+    panel.querySelector('[data-operating-summary]').textContent =
+      `${preset ? preset.description : 'Custom operating values'} · ${values.flow.toLocaleString()} bbl/day · ${values.diameter} in inside diameter.`;
+  }
+  on('[data-operating-preset]', 'change', (event) => {
+    const preset = OPERATING_PRESETS.find((p) => p.id === event.target.value);
+    if (preset) {
+      for (const [id, value] of Object.entries(preset.inputs))
+        panel.querySelector(`[data-input="${id}"]`).value = value;
+      updateOperatingSummary();
+    } else {
+      panel.querySelector('[data-operating-details]').open = true;
+      panel.querySelector('[data-operating-summary]').textContent =
+        'Edit the operating values below. Existing values are retained until you change them.';
+    }
+    stop();
+    invalidate();
+  });
+  updateOperatingSummary();
   function endpoints() {
     return ['a', 'b'].map((k) =>
       parseEndpoint(panel.querySelector(`[data-${k}]`).value),
@@ -831,6 +859,7 @@ export function mountPipelinePlanner({ viewer, openInspector }) {
     field.addEventListener(
       'input',
       () => {
+        if (field.dataset.input) updateOperatingSummary();
         stop();
         invalidate();
       },
@@ -877,6 +906,7 @@ export function mountPipelinePlanner({ viewer, openInspector }) {
           a,
           b,
           inputs: readInputs(),
+          operatingPreset: matchOperatingPreset(readInputs())?.id || null,
           preferences: routingInputs(),
           waypoints: readWaypoints(
             panel.querySelector('[data-waypoints]').value,
@@ -911,6 +941,9 @@ export function mountPipelinePlanner({ viewer, openInspector }) {
       }
       for (const n of panel.querySelectorAll('[data-input]'))
         n.value = d.inputs[n.dataset.input];
+      updateOperatingSummary();
+      panel.querySelector('[data-operating-details]').open =
+        !matchOperatingPreset(d.inputs);
       panel.querySelector('[data-weight-label]').textContent =
         d.inputs.weight + '%';
       stop();
@@ -950,6 +983,7 @@ export function mountPipelinePlanner({ viewer, openInspector }) {
                   status: 'Preliminary candidate; not surveyed or approved',
                   analysisAt,
                   assumptions: inputs,
+                  operatingPreset: matchOperatingPreset(inputs) || null,
                   routingPreferences: preferences,
                   routing: r.routing,
                   exclusions,
