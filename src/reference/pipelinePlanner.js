@@ -131,6 +131,7 @@ export function mountPipelinePlanner({ viewer, openInspector }) {
   const status = (text) =>
     (panel.querySelector('[data-status]').textContent = text);
   function setStage(next) {
+    const previousStage = stage;
     stage = next !== 'setup' && !routes.length ? 'setup' : next;
     for (const container of panel.querySelectorAll('[data-stage-panel]'))
       container.hidden = container.dataset.stagePanel !== stage;
@@ -140,6 +141,11 @@ export function mountPipelinePlanner({ viewer, openInspector }) {
         'aria-pressed',
         String(button.dataset.stage === stage),
       );
+    }
+    if (stage !== previousStage) {
+      panel.scrollTop = 0;
+      const inspector = panel.closest('.lm-inspector');
+      if (inspector) inspector.scrollTop = 0;
     }
     studySummary.textContent = `A: ${panel.querySelector('[data-a]').value || 'not set'} → B: ${panel.querySelector('[data-b]').value || 'not set'}${selected ? ' · ' + (routes.find((r) => r.id === selected)?.name || '') : ''}`;
   }
