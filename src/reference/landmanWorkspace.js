@@ -255,7 +255,9 @@ export function mountLandmanWorkspace({
                 else catalog.get(item.id).flyTo?.();
               }),
           );
-          row.append(toggle, info, tag, zoom);
+          row.append(toggle, info, tag);
+          if (item.dataset || typeof catalog.get(item.id).flyTo === 'function')
+            row.append(zoom);
           section.append(row);
         }
         list.append(section);
