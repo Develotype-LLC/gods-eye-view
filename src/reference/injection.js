@@ -5,7 +5,7 @@ export function createInjectionLayer() {
   const listeners = new Set(), abort = new AbortController();
   const notify = () => {for (const fn of listeners) fn();};
   async function readData() {
-    if (!pending) pending = fetch('/reference-data/heavenwatch/injection.json', {signal: abort.signal}).then(async response => {
+    if (!pending) pending = fetch('/api/reference/rrc/injection', {signal: abort.signal}).then(async response => {
       if (!response.ok) throw new Error('Injection snapshot is not installed');
       data = validateInjection(await response.json()); month ??= data.period[1]; return data;
     }).catch(reason => {pending = null; throw reason;});
@@ -23,7 +23,7 @@ export function createInjectionLayer() {
   }
   function remove() {if (source && !viewer.isDestroyed()) viewer.dataSources.remove(source, true); source = null;}
   return {
-    id: 'injection-wells', name: 'Disposal wells & injection', icon: '◉', source: 'Texas RRC · historical archive', updateInterval: 0,
+    id: 'injection-wells', name: 'Disposal wells & injection', icon: '◉', source: 'Texas RRC · public records', updateInterval: 0,
     init(value) {viewer = value; return true;},
     async enable() {
       const intent = ++generation;
@@ -46,6 +46,6 @@ export function createInjectionLayer() {
     async flyTo() {await readData(); viewer.camera.flyTo({destination: Cesium.Rectangle.fromDegrees(...data.bounds), duration: 1.5});},
     getState() {return {data, enabled, selectedId, month, error};},
     subscribe(fn) {listeners.add(fn); return () => listeners.delete(fn);},
-    getStats() {return {count: enabled ? data.wells.length : 0, source: 'Texas RRC · historical archive', coverage: 'Crane County area · 2016–2025', error};},
+    getStats() {return {count: enabled ? data.wells.length : 0, source: 'Texas RRC · public records', coverage: `Crane County area · ${data?.period.join(' → ') ?? 'RRC public records'}`, error};},
   };
 }

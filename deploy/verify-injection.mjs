@@ -2,10 +2,10 @@ import {readFile, mkdir} from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import puppeteer from 'puppeteer';
 const c=JSON.parse(await readFile(new URL('./.secrets/viewer.json',import.meta.url)));
-const path='/reference-data/heavenwatch/injection.json';
+const path='/api/reference/rrc/injection';
 assert.equal((await fetch(c.url+path)).status,401);
 const response=await fetch(c.url+path,{headers:{Authorization:'Basic '+Buffer.from(c.username+':'+c.password).toString('base64')}});
-assert.equal(response.status,200);const data=await response.json();assert.equal(data.wellCount,160);
+assert.equal(response.status,200);const data=await response.json();assert.equal(data.wellCount,160);assert.equal(data.sourceMode,'rrc-api');assert.ok(data.sourceRetrievedAt);
 const browser=await puppeteer.launch({headless:true});
 try {
  const page=await browser.newPage();await page.setViewport({width:1440,height:1000});await page.authenticate({username:c.username,password:c.password});

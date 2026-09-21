@@ -11,6 +11,8 @@ WorkingDirectory=/srv/godseye/current
 Environment=NODE_ENV=production
 Environment=HOST=127.0.0.1
 Environment=PORT=4173
+Environment=LANDMAN_RRC_CACHE=/var/lib/godseye/rrc-injection.json
+StateDirectory=godseye
 Environment=PATH=/usr/local/bin:/usr/bin:/bin
 EnvironmentFile=-/etc/godseye.env
 ExecStart=/usr/local/bin/node node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 4173 --strictPort

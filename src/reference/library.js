@@ -63,11 +63,12 @@ export function mountReferenceLibrary({viewer, dataManager, layer, catalog}) {
     if (!item.layerId) {detail.append(el('p', item.status === 'On disk' ? 'Source artifacts exist in HeavenWatch. They still need an import and quality review before they can be displayed here.' : 'Roadmap item — this layer is not connected yet.', 'ref-note')); return;}
     if (item.layerId === 'injection-wells') {
       const wellsLayer = catalog.get('injection-wells');
-      const status = el('p', 'Loading well archive…', 'ref-note'); detail.append(status);
+      const status = el('p', 'Connecting to Texas RRC…', 'ref-note'); detail.append(status);
       try {
         const data = await wellsLayer.readData();
         if (disposed || selection !== intent) return;
         status.textContent = `${data.wellCount} wells · ${data.historyWellCount} with history · ${data.recordCount.toLocaleString()} records · ${data.period.join(' → ')}`;
+        detail.append(el('p', data.connection?.warning || (data.sourceRetrievedAt ? `Texas RRC refreshed ${new Date(data.sourceRetrievedAt).toLocaleString()}. Server cache: up to 6 hours. Reopen the app to load a newer snapshot; refresh is requested when the cache expires.` : 'Historical fallback archive; original retrieval date unavailable.'), 'ref-note'));
         const view = el('button', 'View disposal wells & history', 'ref-primary');
         view.addEventListener('click', async () => {
           view.disabled = true;
