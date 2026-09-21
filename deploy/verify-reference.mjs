@@ -21,8 +21,10 @@ try {
   await page.click('[data-first-run-choice="explore"]');
   await page.waitForFunction(() => window.__godsEyeView?.dataManager);
   await page.click('#open-reference-library');
+  await page.type('#reference-library input[type=search]', 'Ground movement');
+  await page.click('#reference-library nav button');
   await page.waitForSelector('#reference-library[open] .ref-primary');
-  assert.equal(await page.$$eval('#reference-library nav button', items => items.length), 23);
+  assert.equal(await page.$$eval('#reference-library nav button', items => items.length), 1);
   await page.click('[data-check-nasa]');
   await page.waitForFunction(() => document.querySelector('#reference-library [role=status]')?.textContent.includes('latest acquisition'));
   await mkdir(new URL('../screenshots/', import.meta.url), {recursive: true});
@@ -47,6 +49,7 @@ try {
   await page.waitForSelector('#ground-motion-legend', {hidden: true});
   assert.equal(await page.evaluate(() => window.__godsEyeView.dataManager.isEnabled('ground-motion')), false);
   await page.click('#open-reference-library');
+  await page.$eval('#reference-library input[type=search]', node => {node.value='';node.dispatchEvent(new Event('input'));});
   await page.type('#reference-library input[type=search]', 'pipelines');
   await page.click('#reference-library nav button');
   assert.equal(await page.$('#reference-library .ref-primary'), null);

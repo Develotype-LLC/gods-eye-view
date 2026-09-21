@@ -18,7 +18,7 @@ export function mountReferenceLibrary({viewer, dataManager, layer, catalog}) {
   document.body.append(legend);
   const detail = dialog.querySelector('.ref-detail'), nav = dialog.querySelector('nav');
   const sample = legend.querySelector('[data-sample]');
-  let selected = 'ground-motion', disposed = false, selection = 0, sampleIntent = 0;
+  let selected = 'texas-wells', disposed = false, selection = 0, sampleIntent = 0;
   const abort = new AbortController();
   const on = (el, type, fn) => el.addEventListener(type, fn, {signal: abort.signal});
   const el = (tag, text, className) => {const node = document.createElement(tag); node.textContent = text; if (className) node.className = className; return node;};
@@ -61,6 +61,21 @@ export function mountReferenceLibrary({viewer, dataManager, layer, catalog}) {
     detail.append(dl);
     const link = el('a', 'Open source documentation ↗'); link.href = item.url; link.target = '_blank'; link.rel = 'noopener noreferrer'; detail.append(link);
     if (!item.layerId) {detail.append(el('p', item.status === 'On disk' ? 'Source artifacts exist in HeavenWatch. They still need an import and quality review before they can be displayed here.' : 'Roadmap item — this layer is not connected yet.', 'ref-note')); return;}
+    if (item.layerId === 'texas-wells') {
+      const texasLayer = catalog.get('texas-wells');
+      const status = el('p', 'Reading statewide database…', 'ref-note'); detail.append(status);
+      try {
+        const data = await texasLayer.readStatus(); if (disposed || selection !== intent) return;
+        status.textContent = data.datasets.map(d => `${d.name === 'gis' ? 'GIS well locations' : 'UIC permits'}: ${Number(d.row_count).toLocaleString()} · imported ${new Date(d.completed_at).toLocaleString()}`).join(' / ');
+        const view = el('button', 'Explore all Texas wells', 'ref-primary'); view.addEventListener('click', async () => {
+          view.disabled = true;
+          try {await dataManager.setEnabled('injection-wells', false, {origin: 'user'}); await dataManager.setEnabled('texas-wells', true, {origin: 'user'}); if (!dataManager.isEnabled('texas-wells')) throw new Error('Texas layer could not be enabled'); texasLayer.flyTo(); dialog.close();}
+          catch (error) {status.textContent = error.message;} finally {view.disabled = false;}
+        }); detail.append(view, el('p', 'Zoom through clusters, filter RRC GIS classifications, or search a Texas API number. Selecting a well shows its UIC permits. Disposal history is fetched by well and saved in the database; the entire statewide H-10 history is not preloaded.', 'ref-note'));
+        detail.append(el('p', 'Statewide GIS and UIC inventories are complete source snapshots. Records without usable coordinates or valid API numbers remain in the database with their limitations. Oil/gas production history, ownership and leases require separate sources.'));
+      } catch (error) {if (selection === intent) status.textContent = error.message;}
+      return;
+    }
     if (item.layerId === 'injection-wells') {
       const wellsLayer = catalog.get('injection-wells');
       const status = el('p', 'Connecting to Texas RRC…', 'ref-note'); detail.append(status);

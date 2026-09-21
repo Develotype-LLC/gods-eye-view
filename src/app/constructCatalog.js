@@ -1,3 +1,4 @@
+import { createTexasLayer } from '../reference/texas.js';
 import { createInjectionLayer } from '../reference/injection.js';
 import { createLayerCatalog } from './catalog.js';
 import { LAYER_STATE_REGISTRY } from '../data/layerState.js';
@@ -108,6 +109,7 @@ export function createApplicationCatalog({
       [
         createGroundMotionLayer(),
     createInjectionLayer(),
+    createTexasLayer(),
         createBhoteKoshiEventLayer(),
         createBhoteKoshiLocatorLayer({
           boundaryResolver: nepalBoundaryResolver,

@@ -17,3 +17,6 @@ deploy/__pycache__/
 deploy/last-release.json
 deploy/verification.json
 public/reference-data/
+
+# Python importer bytecode
+__pycache__/

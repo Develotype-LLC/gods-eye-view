@@ -6,6 +6,7 @@ Available = implemented map control; On disk = artifacts found in HeavenWatch, p
 
 | Layer | Status | Source | Initial coverage | Next step |
 |---|---|---|---|---|
+| Texas wells · statewide database | Available | [Texas RRC public GIS + statewide UIC permit master](https://www.rrc.texas.gov/resource-center/research/data-sets-available-for-download/) | Statewide Texas · all published GIS well-location classifications | Add other statewide datasets and preserve source-specific identifiers and reporting dates. |
 | Ground movement · OPERA | Available | [NASA JPL OPERA DISP-S1 / ASF DAAC](https://www.jpl.nasa.gov/go/opera/products/disp-product-suite/) | Crane County / Tubbs Corner · 2016–2025 | Expand by region and acquisition window after validating each export. |
 | Radar coherence and coverage | On disk | [OPERA DISP-S1 ancillary layers](https://www.jpl.nasa.gov/go/opera/products/disp-product-suite/) | HeavenWatch validation areas | Export time-aware quality summaries from the existing cube. |
 | Surface water and new ponding | Planned | [NASA OPERA DSWx-HLS / DSWx-S1](https://www.jpl.nasa.gov/go/opera/products/) | Regional, subject to product coverage | Select dates, QA masks, and a minimum mapped area. |
@@ -13,8 +14,8 @@ Available = implemented map control; On disk = artifacts found in HeavenWatch, p
 | Radar backscatter and wetting | Planned | [OPERA RTC-S1 / ASF DAAC](https://www.jpl.nasa.gov/go/opera/products/) | Permian pilot areas | Pair with precipitation before deriving anomalies. |
 | Surface temperature | Planned | [NASA ECOSTRESS; USGS Landsat Collection 2 L2](https://ecostress.jpl.nasa.gov/) | Scene-dependent | Inventory usable scenes and current product quality notes. |
 | NISAR displacement | Future | [NASA–ISRO NISAR / OPERA DISP-NI](https://www.jpl.nasa.gov/go/opera/products/disp-product-suite/) | Availability to verify before intake | Check validated product coverage and compatibility when available. |
-| Disposal and injection wells | Available | [Texas RRC; NM OCD for expansion](https://www.rrc.texas.gov/resource-center/research/data-sets-available-for-download/) | HeavenWatch Crane County subset first | Audit IDs, zone classification, source dates, and coordinates. |
-| Reported injection history | Available | [Texas RRC H-10 / injection reporting](https://www.rrc.texas.gov/oil-and-gas/publications-and-notices/online-research-queries/) | HeavenWatch historical subset | Join to audited well IDs and expose reporting period. |
+| Disposal and injection wells | Available | [Texas RRC; NM OCD for expansion](https://www.rrc.texas.gov/resource-center/research/data-sets-available-for-download/) | Crane County pilot · Texas RRC API | Expand the geographic query after reviewing missing-location coverage. |
+| Reported injection history | Available | [Texas RRC H-10 / injection reporting](https://www.rrc.texas.gov/oil-and-gas/publications-and-notices/online-research-queries/) | Crane County pilot · latest published H-10 records | Review source revisions and expand coverage; cache refreshes on demand every 6 hours. |
 | Wellbores, inactive and orphan wells | On disk | [Texas RRC Full Wellbore, IWAR and orphan-well records](https://www.rrc.texas.gov/resource-center/research/data-sets-available-for-download/) | Texas; imported subsets need audit | Reconcile effective dates and coordinate completeness. |
 | Drilling permits and activity | On disk | [Texas RRC W-1; NM OCD permits](https://www.rrc.texas.gov/resource-center/research/data-sets-available-for-download/) | Texas / New Mexico | Export HeavenWatch W-1 subset and retain amendment dates. |
 | Oil, gas and produced-water history | Planned | [NM OCD C-115; Texas RRC production and well tests](https://www.emnrd.nm.gov/ocd/) | Source-dependent well / lease / operator grain | Define grain and crosswalks before mapping totals. |
@@ -89,3 +90,8 @@ A direct verification returned 174 permits, 13 excluded placeholder/invalid reco
 Refresh is request-driven: a six-hour server cache avoids repeated bulk queries, concurrent requests coalesce, pagination and response sizes are capped, and refresh has a 50-second deadline. This is not a scheduled monitoring job. The browser holds the loaded snapshot until the app reloads. Its source detail and well panel show the retrieval timestamp separately from reporting period. H-10 values remain delayed annual filings of monthly measurements.
 
 Production cache is `/var/lib/godseye/rrc-injection.json` (`StateDirectory=godseye`), replaced atomically after a successful validated fetch and retained across releases. If RRC fails, the endpoint explicitly labels the previous cache stale; without a cache, it explicitly labels the bundled HeavenWatch archive as fallback. A failed refresh is backed off for five minutes. Local development defaults to `.gev-cache/rrc-injection.json`.
+
+
+## Statewide database
+
+The dedicated PostgreSQL/PostGIS database and Texas wells layer extend beyond the Crane County pilot to the complete RRC GIS location and UIC permit inventories. The database serves viewport clusters, source-classification filters and API search. Per-well disposal history is fetched and saved on demand. See [database runbook](../../deploy/database/README.md) for source coverage, import reconciliation, access controls and refresh procedures.

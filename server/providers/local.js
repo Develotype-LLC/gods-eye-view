@@ -1,3 +1,4 @@
+import { texasProxy } from './texas.js';
 import { rrcProxy } from './rrc.js';
 import { groundMotionProxy } from './ground-motion.js';
 import { openSkyProxy } from './aircraft/opensky.js';
@@ -51,6 +52,7 @@ function localProviderPlugins() {
     googleGeocodingProxy(),
     groundMotionProxy(),
     rrcProxy(),
+    texasProxy(),
     keySetupEndpoint(),
   ];
 }
