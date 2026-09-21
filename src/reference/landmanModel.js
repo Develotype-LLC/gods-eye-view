@@ -12,7 +12,7 @@ export function initialLandmanMode({
 export const LANDMAN_LAYERS = [
   {
     id: 'texas-wells',
-    group: 'Wells & records',
+    group: 'Oil & gas',
     name: 'Texas wells',
     source: 'RRC · statewide inventory',
     tag: 'Statewide',
@@ -22,7 +22,7 @@ export const LANDMAN_LAYERS = [
   {
     id: 'rrc-inactive',
     dataset: true,
-    group: 'Wells & records',
+    group: 'Oil & gas',
     name: 'Inactive wells',
     source: 'RRC · August 2026',
     tag: 'Snapshot',
@@ -31,7 +31,7 @@ export const LANDMAN_LAYERS = [
   {
     id: 'rrc-plugging',
     dataset: true,
-    group: 'Wells & records',
+    group: 'Oil & gas',
     name: 'Plugging history',
     source: 'RRC · 2015–2026',
     tag: 'History',
@@ -40,7 +40,7 @@ export const LANDMAN_LAYERS = [
   {
     id: 'texnet-injection',
     dataset: true,
-    group: 'Wells & records',
+    group: 'Oil & gas',
     name: 'Injection reporting',
     source: 'TexNet · reporting subset',
     tag: 'History',

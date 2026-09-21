@@ -2,7 +2,7 @@
 
 The standalone app opens a Landman workspace for a fresh visit. `?view=landman` selects it explicitly; `?view=console` restores the original console. A shared scene without an explicit view retains the console. The choice is saved in local storage and the URL.
 
-The left sidebar groups the existing 14 map layers by wells/records, geology/movement, water/infrastructure, and activity/water use. Switches change visibility; layer names enable the layer, zoom to coverage, and open its inspector. Search matches names, sources, categories and coverage labels. Active only filters the list. The RRC archive is searchable separately because most archive rows have no map geometry.
+The left sidebar groups the existing 14 map layers by oil/gas, geology/movement, water/infrastructure, and activity/water use. Switches change visibility; layer names enable the layer, zoom to coverage, and open its inspector. Search matches names, sources, categories and coverage labels. Active only filters the list. The RRC archive is searchable separately because most archive rows have no map geometry.
 
 Task presets replace the Landman layer selection and move to the relevant area:
 
