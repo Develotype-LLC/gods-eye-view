@@ -20,3 +20,5 @@ public/reference-data/
 
 # Python importer bytecode
 __pycache__/
+
+deploy/last-records-verification.json

@@ -2,7 +2,7 @@
 
 Existing local sources and reuse priorities are inventoried in [LOCAL-PROJECT-REUSE.md](LOCAL-PROJECT-REUSE.md). This includes Basin Atlas infrastructure, the produced-water regulatory platform, science-data history, USGS chemistry, and the Exxon offline package.
 
-Status: first ground-movement pilot implemented, 2026-09-20. This is the proposed source roadmap, not a claim that every dataset has been imported or its current access terms verified. The in-app Library uses src/reference/catalog.js.
+Status: ground movement, statewide Texas wells, national basins, and RRC/TexNet/water/ET collections implemented, 2026-09-21. This is the proposed source roadmap, not a claim that every dataset has been imported or its current access terms verified. The in-app Library uses src/reference/catalog.js.
 
 Available = implemented map control; On disk = artifacts found in HeavenWatch, pending quality review and export; Planned = proposed source; Future = product availability to verify; Research only = unsuitable for operational display.
 
@@ -33,6 +33,8 @@ Available = implemented map control; On disk = artifacts found in HeavenWatch, p
 | Precipitation and drought | Planned | [PRISM; NOAA MRMS; US Drought Monitor](https://prism.oregonstate.edu/) | Regional gridded / weekly products | Verify reuse terms and align observation windows. |
 | Terrain, floodplains and wetlands | Planned | [USGS 3DEP; FEMA NFHL; USFWS NWI; TxGIO](https://www.usgs.gov/3d-elevation-program) | Coverage varies by source and survey date | Record resolution, vertical datum, vintage, and coverage gaps. |
 | Parcels, rights and corridor constraints | Planned | [County appraisal / recorded instruments; BLM; authorized project records](https://www.blm.gov/services/geospatial/GISData) | County and project-specific | Use separate private access for legal and client records. |
+
+See [IMPORTED-COLLECTIONS.md](IMPORTED-COLLECTIONS.md) for the additional RRC, TexNet, flare, pond, infrastructure and ET collection counts, source boundaries, and app controls.
 
 ## Recommended implementation order
 

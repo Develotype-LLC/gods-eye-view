@@ -61,6 +61,20 @@ export function mountReferenceLibrary({viewer, dataManager, layer, catalog}) {
     detail.append(dl);
     const link = el('a', 'Open source documentation ↗'); link.href = item.url; link.target = '_blank'; link.rel = 'noopener noreferrer'; detail.append(link);
     if (!item.layerId) {detail.append(el('p', item.status === 'On disk' ? 'Source artifacts exist in HeavenWatch. They still need an import and quality review before they can be displayed here.' : 'Roadmap item — this layer is not connected yet.', 'ref-note')); return;}
+    if (item.layerId === 'reference-records') {
+      const status = el('p', 'Local dataset with retained source records and reporting periods.', 'ref-note');
+      const view = el('button', 'Open collection', 'ref-primary');
+      view.addEventListener('click', async () => {
+        view.disabled = true;
+        try {
+          if (!dataManager.isEnabled('reference-records')) catalog.get('reference-records').select(item.datasetId);
+          await dataManager.setEnabled('reference-records', true, {origin: 'user'});
+          if (!dataManager.isEnabled('reference-records')) throw new Error('Reference collection could not be enabled');
+          await catalog.get('reference-records').showDataset(item.datasetId); dialog.close();
+        } catch (error) {status.textContent = error.message;} finally {view.disabled = false;}
+      });
+      detail.append(status, view); return;
+    }
     if (item.layerId === 'us-basins') {
       const status = el('p', 'USGS boundary snapshot · 144 source polygons · retrieved September 2026', 'ref-note');
       const view = el('button', 'View US geological basins', 'ref-primary');

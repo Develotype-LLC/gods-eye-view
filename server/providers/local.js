@@ -1,3 +1,4 @@
+import { referenceRecordsProxy } from './reference-records.js';
 import { texasProxy } from './texas.js';
 import { rrcProxy } from './rrc.js';
 import { groundMotionProxy } from './ground-motion.js';
@@ -53,6 +54,7 @@ function localProviderPlugins() {
     groundMotionProxy(),
     rrcProxy(),
     texasProxy(),
+    referenceRecordsProxy(),
     keySetupEndpoint(),
   ];
 }

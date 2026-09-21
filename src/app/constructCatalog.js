@@ -1,3 +1,4 @@
+import { createReferenceRecordsLayer } from '../reference/records.js';
 import { createBasinsLayer } from '../reference/basins.js';
 import { createTexasLayer } from '../reference/texas.js';
 import { createInjectionLayer } from '../reference/injection.js';
@@ -112,6 +113,7 @@ export function createApplicationCatalog({
     createInjectionLayer(),
     createTexasLayer(),
     createBasinsLayer(),
+    createReferenceRecordsLayer(),
         createBhoteKoshiEventLayer(),
         createBhoteKoshiLocatorLayer({
           boundaryResolver: nepalBoundaryResolver,

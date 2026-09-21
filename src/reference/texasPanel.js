@@ -1,5 +1,5 @@
 import * as Cesium from 'cesium';
-export function mountTexasPanel({viewer,layer,dataManager}){
+export function mountTexasPanel({viewer,layer,dataManager,referenceLayer}){
  if(!layer)return()=>{};
  const panel=document.createElement('section');panel.id='texas-panel';panel.hidden=true;panel.setAttribute('aria-label','Texas statewide wells');
  panel.innerHTML=`<header><strong>TEXAS WELL DATABASE</strong><button data-hide aria-label="Hide Texas wells">✕</button></header><p data-status></p><button data-texas>View all Texas</button><label>RRC GIS classification<select data-category><option value="">All classifications</option></select></label><form data-search><label>Find Texas API-8 or API-10<input data-api placeholder="10300256" maxlength="10" inputmode="numeric"></label><button>Find well</button></form><p data-view role="status"></p><div data-detail></div><small>GIS locations may include permits, plugged wells and duplicate API locations. Source classification is not proof of current operation.</small>`;
@@ -22,6 +22,7 @@ export function mountTexasPanel({viewer,layer,dataManager}){
   const w=s.detail.matches[0];if(!w){box.append(text('p','No matching well location.'));return;}
   box.append(text('h3',w.api8?`API-8 ${w.api8}`:`Unassigned API · GIS ${w.id}`),text('p',`${w.category} · well ${w.well_number||'not recorded'}`),text('p',`Location source: ${w.raw.GIS_LOCATION_SOURCE||'not recorded'}`));
   if(s.detail.matches.length>1)box.append(text('p',`${s.detail.matches.length} GIS locations match this API; the first is shown.`));
+  if(w.api8&&referenceLayer){const b=text('button','Open downloaded RRC records');b.onclick=async()=>{await dataManager.setEnabled('reference-records',true,{origin:'user'});referenceLayer.openArchive(w.api8);};box.append(b);}
   box.append(text('p',`${s.detail.permits.length} UIC permits linked by API-8.`));
   for(const p of s.detail.permits)box.append(text('p',`UIC ${p.uic} · type ${p.injection_type} · ${p.raw.lease_name||''} · operator #${p.raw.operator_number||'not recorded'}`));
   box.append(text('small','UIC types 1/2 are disposal; type 3 is secondary recovery. GIS symbols alone do not establish disposal membership.'));

@@ -47,3 +47,7 @@ The database preserves older import versions; review disk growth before retainin
 On 2026-09-21 UTC, the import reconciled 1,396,962 GIS location records (all with geometry; 1,017,112 distinct valid API-8 values) and 126,745 UIC records (119,823 with geometry; 117,190 distinct valid API-8 values). The database occupied about 812 MB. The initial custom-format recovery dump was about 80 MB and its archive table of contents was verified. The app role could read inventories and write history cache entries, but could not insert inventory records; TCP listening was disabled.
 
 Live checks covered statewide cluster counts, 140 records in a small East Texas test rectangle outside the original pilot, API-8 lookup, UIC joins and 114 H-10 rows for a sampled well, with the second history request served from the database cache. A valid API may have multiple GIS locations; the interface reports matching records rather than claiming a unique surveyed well position.
+
+## Additional source collections
+
+The RRC archive and TexNet, flare, pond, water and ET collections use `reference-records.sql`. See [the intake runbook](../../docs/reference/IMPORTED-COLLECTIONS.md) for exact coverage, refresh commands, backup location and verification.
