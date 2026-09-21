@@ -53,6 +53,7 @@ export function mountReferenceLibrary({viewer, dataManager, layer, catalog}) {
     if (!entries.length) nav.append(el('p', 'No matching layers.'));
   }
   on(dialog.querySelector('input[type=search]'), 'input', list);
+  function reveal(item) {dialog.close();document.dispatchEvent(new CustomEvent('landman:inspect',{detail:{layerId:item.layerId,datasetId:item.datasetId,name:item.name}}));}
   async function showDetail(item) {
     const intent = ++selection;
     detail.replaceChildren(el('span', item.status, `ref-badge ${item.layerId ? 'available' : ''}`), el('h3', item.name), el('p', item.note));
@@ -70,7 +71,7 @@ export function mountReferenceLibrary({viewer, dataManager, layer, catalog}) {
           if (!dataManager.isEnabled('reference-records')) catalog.get('reference-records').select(item.datasetId);
           await dataManager.setEnabled('reference-records', true, {origin: 'user'});
           if (!dataManager.isEnabled('reference-records')) throw new Error('Reference collection could not be enabled');
-          await catalog.get('reference-records').showDataset(item.datasetId); dialog.close();
+          await catalog.get('reference-records').showDataset(item.datasetId); reveal(item);
         } catch (error) {status.textContent = error.message;} finally {view.disabled = false;}
       });
       detail.append(status, view); return;
@@ -83,7 +84,7 @@ export function mountReferenceLibrary({viewer, dataManager, layer, catalog}) {
         try {
           await dataManager.setEnabled('us-basins', true, {origin: 'user'});
           if (!dataManager.isEnabled('us-basins')) throw new Error('Basin layer could not be enabled');
-          catalog.get('us-basins').flyTo(); dialog.close();
+          catalog.get('us-basins').flyTo(); reveal(item);
         } catch (error) {status.textContent = error.message;} finally {view.disabled = false;}
       });
       detail.append(status, view); return;
@@ -96,7 +97,7 @@ export function mountReferenceLibrary({viewer, dataManager, layer, catalog}) {
         status.textContent = data.datasets.map(d => `${d.name === 'gis' ? 'GIS well locations' : 'UIC permits'}: ${Number(d.row_count).toLocaleString()} · imported ${new Date(d.completed_at).toLocaleString()}`).join(' / ');
         const view = el('button', 'Explore all Texas wells', 'ref-primary'); view.addEventListener('click', async () => {
           view.disabled = true;
-          try {await dataManager.setEnabled('injection-wells', false, {origin: 'user'}); await dataManager.setEnabled('texas-wells', true, {origin: 'user'}); if (!dataManager.isEnabled('texas-wells')) throw new Error('Texas layer could not be enabled'); texasLayer.flyTo(); dialog.close();}
+          try {await dataManager.setEnabled('injection-wells', false, {origin: 'user'}); await dataManager.setEnabled('texas-wells', true, {origin: 'user'}); if (!dataManager.isEnabled('texas-wells')) throw new Error('Texas layer could not be enabled'); texasLayer.flyTo(); reveal(item);}
           catch (error) {status.textContent = error.message;} finally {view.disabled = false;}
         }); detail.append(view, el('p', 'Zoom through clusters, filter RRC GIS classifications, or search a Texas API number. Selecting a well shows its UIC permits. Disposal history is fetched by well and saved in the database; the entire statewide H-10 history is not preloaded.', 'ref-note'));
         detail.append(el('p', 'Statewide GIS and UIC inventories are complete source snapshots. Records without usable coordinates or valid API numbers remain in the database with their limitations. Oil/gas production history, ownership and leases require separate sources.'));
@@ -114,7 +115,7 @@ export function mountReferenceLibrary({viewer, dataManager, layer, catalog}) {
         const view = el('button', 'View disposal wells & history', 'ref-primary');
         view.addEventListener('click', async () => {
           view.disabled = true;
-          try {await dataManager.setEnabled(item.layerId, true, {origin: 'user'}); if (!dataManager.isEnabled(item.layerId)) throw new Error('Well layer could not be enabled'); await wellsLayer.flyTo(); dialog.close();}
+          try {await dataManager.setEnabled(item.layerId, true, {origin: 'user'}); if (!dataManager.isEnabled(item.layerId)) throw new Error('Well layer could not be enabled'); await wellsLayer.flyTo(); reveal(item);}
           catch (error) {status.textContent = error.message;} finally {view.disabled = false;}
         }); detail.append(view, el('p', 'Choose a reporting month, then click a marker or select an API-8 to inspect history. You can display these wells together with ground movement.', 'ref-note'));
         const limitations = document.createElement('ul'); for (const note of data.limitations) limitations.append(el('li', note)); detail.append(limitations);
@@ -131,7 +132,7 @@ export function mountReferenceLibrary({viewer, dataManager, layer, catalog}) {
       const view = el('button', 'View ground movement on map', 'ref-primary');
       view.addEventListener('click', async () => {
         view.disabled = true;
-        try {await dataManager.setEnabled(item.layerId, true, {origin: 'user'}); if (!dataManager.isEnabled(item.layerId)) throw new Error('Layer could not be enabled'); await layer.flyTo(); dialog.close(); sync();}
+        try {await dataManager.setEnabled(item.layerId, true, {origin: 'user'}); if (!dataManager.isEnabled(item.layerId)) throw new Error('Layer could not be enabled'); await layer.flyTo(); reveal(item); sync();}
         catch (error) {status.textContent = error.message;} finally {view.disabled = false;}
       }); detail.append(view, el('p', 'Uses satellite terrain so the raster stays visible. Google 3D remains selectable from the map controls.', 'ref-note'));
       const nasa = el('button', 'Check NASA for latest acquisition'); nasa.dataset.checkNasa = '';
