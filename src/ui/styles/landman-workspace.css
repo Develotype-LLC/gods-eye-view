@@ -675,3 +675,68 @@ body.landman-mode #cctv-sync-chip {
 .motion-period-note {
   color: #e8c987;
 }
+
+#landman-workspace[data-inspector='land-panel'] #land-panel:not([hidden]) {
+  display: block !important;
+}
+#land-panel {
+  font-size: 12px;
+}
+#land-panel [hidden] {
+  display: none !important;
+}
+#land-panel label {
+  display: block;
+  margin: 10px 0;
+}
+#land-panel input:not([type='checkbox']),
+#land-panel select,
+#land-panel textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8px;
+  background: #192b31;
+  color: #eee;
+  border: 1px solid #506267;
+  border-radius: 5px;
+}
+#land-panel select[multiple] {
+  min-height: 130px;
+}
+#land-panel p {
+  line-height: 1.5;
+}
+#land-panel a {
+  display: block;
+  color: #84d3ce;
+  margin: 7px 0;
+  overflow-wrap: anywhere;
+}
+#land-panel button {
+  padding: 8px;
+  text-align: left;
+  margin: 3px 0;
+}
+#land-panel [data-results] button,
+#land-panel [data-owner-matches] button,
+#land-panel [data-selected] button {
+  display: block;
+  width: 100%;
+}
+#land-panel [data-owner-matches] {
+  max-height: 230px;
+  overflow: auto;
+}
+#land-panel [data-selected] button {
+  color: #e9cd8a;
+}
+#land-panel details,
+#land-panel .land-account {
+  border-top: 1px solid #46595d;
+  padding: 10px 0;
+}
+#land-panel .land-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}

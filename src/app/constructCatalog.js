@@ -1,3 +1,4 @@
+import { createLandLayer } from '../reference/land.js';
 import { createTerrainDifferenceLayer } from '../reference/terrainDifference.js';
 import { createReferenceRecordsLayer } from '../reference/records.js';
 import { createBasinsLayer } from '../reference/basins.js';
@@ -111,11 +112,12 @@ export function createApplicationCatalog({
     const catalog = createLayerCatalog(
       [
         createGroundMotionLayer(),
+        createLandLayer(),
         createTerrainDifferenceLayer(),
-    createInjectionLayer(),
-    createTexasLayer(),
-    createBasinsLayer(),
-    createReferenceRecordsLayer(),
+        createInjectionLayer(),
+        createTexasLayer(),
+        createBasinsLayer(),
+        createReferenceRecordsLayer(),
         createBhoteKoshiEventLayer(),
         createBhoteKoshiLocatorLayer({
           boundaryResolver: nepalBoundaryResolver,

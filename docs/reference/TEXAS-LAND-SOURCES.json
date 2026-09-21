@@ -1,0 +1,882 @@
+{
+  "retrievedAt": "2026-09-21",
+  "collectionId": "0fa04328-872e-481c-b453-126a74777593",
+  "counties": [
+    {
+      "fips": "48101",
+      "county": "Cottle County",
+      "basins": [
+        "Palo Duro Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-cottle_48101_shp.zip",
+      "sha256": "578413a505a234c03bcdfa8e38e0ff7bf1a665468e62d0f3158a64180b14522a",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250501"
+      ],
+      "sourceRows": 4374,
+      "parcels": 4343,
+      "accounts": 4373,
+      "repairedGeometries": 0,
+      "unlocatedRows": 1
+    },
+    {
+      "fips": "48303",
+      "county": "Lubbock County",
+      "basins": [
+        "Permian Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-lubbock_48303_shp.zip",
+      "sha256": "7c209d7db49f01c0e6cc95f28238a4f85523882d3c511c9db838582988aaa0a7",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250701"
+      ],
+      "sourceRows": 135112,
+      "parcels": 135112,
+      "accounts": 135112,
+      "repairedGeometries": 11,
+      "unlocatedRows": 0
+    },
+    {
+      "fips": "48135",
+      "county": "Ector County",
+      "basins": [
+        "Permian Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-ector_48135_shp.zip",
+      "sha256": "09d31937577672ac206bf1a57ad826f2a6433d64242436b81a59ecea1e18c011",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250801"
+      ],
+      "sourceRows": 75947,
+      "parcels": 75890,
+      "accounts": 75891,
+      "repairedGeometries": 12,
+      "unlocatedRows": 56
+    },
+    {
+      "fips": "48153",
+      "county": "Floyd County",
+      "basins": [
+        "Palo Duro Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-floyd_48153_shp.zip",
+      "sha256": "d7fc5269a6fb22fc122d7a77809ad07abce6763368e577e7e3a38559a4eacfc4",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250701"
+      ],
+      "sourceRows": 13217,
+      "parcels": 13217,
+      "accounts": 13217,
+      "repairedGeometries": 1,
+      "unlocatedRows": 0
+    },
+    {
+      "fips": "48107",
+      "county": "Crosby County",
+      "basins": [
+        "Permian Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-crosby_48107_shp.zip",
+      "sha256": "db57a49a4b970879cfb330086afddab8add888cec8a2a8a186c471a9eb756324",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250501"
+      ],
+      "sourceRows": 6670,
+      "parcels": 5987,
+      "accounts": 6670,
+      "repairedGeometries": 0,
+      "unlocatedRows": 0
+    },
+    {
+      "fips": "48017",
+      "county": "Bailey County",
+      "basins": [
+        "Palo Duro Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-bailey_48017_shp.zip",
+      "sha256": "df60d7a0b686e21bbd927bfbc53d864b5639ce120f59597b0acee96e9555f3f5",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250101"
+      ],
+      "sourceRows": 6044,
+      "parcels": 5957,
+      "accounts": 6044,
+      "repairedGeometries": 1,
+      "unlocatedRows": 0
+    },
+    {
+      "fips": "48191",
+      "county": "Hall County",
+      "basins": [
+        "Palo Duro Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-hall_48191_shp.zip",
+      "sha256": "68dd64b90df00adf617c8ece719f4cae577d108fb703268161fc5b746a45a5bc",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250501"
+      ],
+      "sourceRows": 6353,
+      "parcels": 6263,
+      "accounts": 6347,
+      "repairedGeometries": 1,
+      "unlocatedRows": 6
+    },
+    {
+      "fips": "48301",
+      "county": "Loving County",
+      "basins": [
+        "Permian Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-loving_48301_shp.zip",
+      "sha256": "7a9182018aafd13680927b22f5536157b6d66a59d51dcf83cc4a63cf97cae85c",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250501"
+      ],
+      "sourceRows": 1918,
+      "parcels": 1845,
+      "accounts": 1914,
+      "repairedGeometries": 1,
+      "unlocatedRows": 4
+    },
+    {
+      "fips": "48117",
+      "county": "Deaf Smith County",
+      "basins": [
+        "Palo Duro Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-deafsmith_48117_shp.zip",
+      "sha256": "757f50f7fa70805042483efa2dc1ef8dcfab2b5dbcebd1dc7c08cfb2f7a9d0e8",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250101"
+      ],
+      "sourceRows": 10901,
+      "parcels": 10628,
+      "accounts": 10901,
+      "repairedGeometries": 0,
+      "unlocatedRows": 0
+    },
+    {
+      "fips": "48279",
+      "county": "Lamb County",
+      "basins": [
+        "Permian Basin",
+        "Palo Duro Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-lamb_48279_shp.zip",
+      "sha256": "f49d19d45f180ec773b8bc60674d14f1a6664b6a3d67509fc6dfdb49cbc378fd",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250201"
+      ],
+      "sourceRows": 13871,
+      "parcels": 13870,
+      "accounts": 13871,
+      "repairedGeometries": 1,
+      "unlocatedRows": 0
+    },
+    {
+      "fips": "48219",
+      "county": "Hockley County",
+      "basins": [
+        "Permian Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-hockley_48219_shp.zip",
+      "sha256": "79190a5776299e94ed62ecc3f32cfd03ceb14ae5db3327ff55053b4a1753bb59",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250101"
+      ],
+      "sourceRows": 17242,
+      "parcels": 16386,
+      "accounts": 17242,
+      "repairedGeometries": 2,
+      "unlocatedRows": 0
+    },
+    {
+      "fips": "48075",
+      "county": "Childress County",
+      "basins": [
+        "Palo Duro Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-childress_48075_shp.zip",
+      "sha256": "405435b5e07ed2d25a037f183ac02e8ed7bd95673ed05527d8b8f891f0360c5c",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250501"
+      ],
+      "sourceRows": 6030,
+      "parcels": 5908,
+      "accounts": 6030,
+      "repairedGeometries": 0,
+      "unlocatedRows": 0
+    },
+    {
+      "fips": "48243",
+      "county": "Jeff Davis County",
+      "basins": [
+        "Permian Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-jeffdavis_48243_shp.zip",
+      "sha256": "2a79165b7524d0ce94f11634d80264d03b71a9b0b7277310b74e6a3a3f5ba729",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250501"
+      ],
+      "sourceRows": 7176,
+      "parcels": 6431,
+      "accounts": 7175,
+      "repairedGeometries": 1,
+      "unlocatedRows": 1
+    },
+    {
+      "fips": "48495",
+      "county": "Winkler County",
+      "basins": [
+        "Permian Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-winkler_48495_shp.zip",
+      "sha256": "c6b906ac674e31c2083f92e0b1b4b98c201199d81999076ecc187d3015306bde",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250201"
+      ],
+      "sourceRows": 7234,
+      "parcels": 6225,
+      "accounts": 7234,
+      "repairedGeometries": 0,
+      "unlocatedRows": 0
+    },
+    {
+      "fips": "48381",
+      "county": "Randall County",
+      "basins": [
+        "Palo Duro Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-randall_48381_shp.zip",
+      "sha256": "a149a7d40d50fcfce77b18cd6dae54d13289e41edeedb633f4f367d0d23002e1",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250801"
+      ],
+      "sourceRows": 64824,
+      "parcels": 64824,
+      "accounts": 64824,
+      "repairedGeometries": 7,
+      "unlocatedRows": 0
+    },
+    {
+      "fips": "48389",
+      "county": "Reeves County",
+      "basins": [
+        "Permian Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-reeves_48389_shp.zip",
+      "sha256": "967c826f2d7d2793272e6cf599322ea643da47783b77d7de1e369f2989505515",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250801"
+      ],
+      "sourceRows": 14975,
+      "parcels": 12533,
+      "accounts": 14975,
+      "repairedGeometries": 4,
+      "unlocatedRows": 0
+    },
+    {
+      "fips": "48109",
+      "county": "Culberson County",
+      "basins": [
+        "Permian Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-culberson_48109_shp.zip",
+      "sha256": "b167c1f091a3799b9a8310040c9bcfecfed0037442956774e65e8f1f1a40487e",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250501"
+      ],
+      "sourceRows": 13333,
+      "parcels": 10456,
+      "accounts": 13327,
+      "repairedGeometries": 2,
+      "unlocatedRows": 6
+    },
+    {
+      "fips": "48375",
+      "county": "Potter County",
+      "basins": [
+        "Palo Duro Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-potter_48375_shp.zip",
+      "sha256": "394ed459723dc0e2f9bbc1e85274feea5520199fc8b5910ae3a668c221152884",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250801"
+      ],
+      "sourceRows": 53490,
+      "parcels": 53490,
+      "accounts": 53490,
+      "repairedGeometries": 3,
+      "unlocatedRows": 0
+    },
+    {
+      "fips": "48359",
+      "county": "Oldham County",
+      "basins": [
+        "Palo Duro Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-oldham_48359_shp.zip",
+      "sha256": "204724b8b4f9fa5b7cc4b5c34a22482ad40d1d4e62ce86fb1332332e83b6834e",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250201"
+      ],
+      "sourceRows": 4162,
+      "parcels": 3474,
+      "accounts": 4162,
+      "repairedGeometries": 1,
+      "unlocatedRows": 0
+    },
+    {
+      "fips": "48079",
+      "county": "Cochran County",
+      "basins": [
+        "Permian Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-cochran_48079_shp.zip",
+      "sha256": "835293533fd9570a5b69806e6f2a7f64a789e734be9caffdbf9729570d99df0f",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250101"
+      ],
+      "sourceRows": 5735,
+      "parcels": 5337,
+      "accounts": 5735,
+      "repairedGeometries": 2,
+      "unlocatedRows": 0
+    },
+    {
+      "fips": "48437",
+      "county": "Swisher County",
+      "basins": [
+        "Palo Duro Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-swisher_48437_shp.zip",
+      "sha256": "afbf852dfc1dd0a61dd3dd3bfecaac428831ec614de47ebf0bc67428239a69af",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250201"
+      ],
+      "sourceRows": 6657,
+      "parcels": 6458,
+      "accounts": 6657,
+      "repairedGeometries": 0,
+      "unlocatedRows": 0
+    },
+    {
+      "fips": "48369",
+      "county": "Parmer County",
+      "basins": [
+        "Palo Duro Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-parmer_48369_shp.zip",
+      "sha256": "7210b77d6cf9fe10d16ca28f88f03248e7a55a9b0405a5f80e016a08a6bf926b",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250201"
+      ],
+      "sourceRows": 6606,
+      "parcels": 6536,
+      "accounts": 6606,
+      "repairedGeometries": 1,
+      "unlocatedRows": 0
+    },
+    {
+      "fips": "48383",
+      "county": "Reagan County",
+      "basins": [
+        "Permian Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-reagan_48383_shp.zip",
+      "sha256": "dcecfe57d43d60d8bdbbb0019d3bc2cf6f4018d0b417e214c8a892f0ab142010",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250501"
+      ],
+      "sourceRows": 4607,
+      "parcels": 4546,
+      "accounts": 4606,
+      "repairedGeometries": 1,
+      "unlocatedRows": 1
+    },
+    {
+      "fips": "48103",
+      "county": "Crane County",
+      "basins": [
+        "Permian Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-crane_48103_shp.zip",
+      "sha256": "d9eda196fa7bd91e2e5b6fabf0a99fa53b94bb30500ffbefa5852353abd49e90",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250501"
+      ],
+      "sourceRows": 6913,
+      "parcels": 4018,
+      "accounts": 6913,
+      "repairedGeometries": 1,
+      "unlocatedRows": 0
+    },
+    {
+      "fips": "48475",
+      "county": "Ward County",
+      "basins": [
+        "Permian Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-ward_48475_shp.zip",
+      "sha256": "ef578c96a05b58ebe031f6934588a3e7e5e285830f88770eb375cc99e2d0a636",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250501"
+      ],
+      "sourceRows": 15181,
+      "parcels": 12810,
+      "accounts": 15174,
+      "repairedGeometries": 1,
+      "unlocatedRows": 7
+    },
+    {
+      "fips": "48461",
+      "county": "Upton County",
+      "basins": [
+        "Permian Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-upton_48461_shp.zip",
+      "sha256": "d2343b419aac7d713207ae5ea9a24618a6f23571334f728020bfd67c90ad65c6",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250501"
+      ],
+      "sourceRows": 7882,
+      "parcels": 7707,
+      "accounts": 7846,
+      "repairedGeometries": 0,
+      "unlocatedRows": 36
+    },
+    {
+      "fips": "48043",
+      "county": "Brewster County",
+      "basins": [
+        "Permian Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-brewster_48043_shp.zip",
+      "sha256": "904c390a724ab835fa47b35bbabcf61fcc0e3dc652aa1c4ba334623003decbfa",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250201"
+      ],
+      "sourceRows": 20287,
+      "parcels": 20281,
+      "accounts": 20287,
+      "repairedGeometries": 12,
+      "unlocatedRows": 0
+    },
+    {
+      "fips": "48173",
+      "county": "Glasscock County",
+      "basins": [
+        "Permian Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-glasscock_48173_shp.zip",
+      "sha256": "07ba79938bd24d4bf9aced6e27b1b0a0ffcb956eb21b159c10c8675d823ac160",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250201"
+      ],
+      "sourceRows": 2988,
+      "parcels": 2215,
+      "accounts": 2988,
+      "repairedGeometries": 0,
+      "unlocatedRows": 0
+    },
+    {
+      "fips": "48227",
+      "county": "Howard County",
+      "basins": [
+        "Permian Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-howard_48227_shp.zip",
+      "sha256": "74a6bd352aa5be9dc7065e9a8c95be6267d79b8a1737410f2887274840002713",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250201"
+      ],
+      "sourceRows": 20654,
+      "parcels": 20636,
+      "accounts": 20654,
+      "repairedGeometries": 2,
+      "unlocatedRows": 0
+    },
+    {
+      "fips": "48501",
+      "county": "Yoakum County",
+      "basins": [
+        "Permian Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-yoakum_48501_shp.zip",
+      "sha256": "067403ea13fc2fa71054c6a9b55c98322c14b912005306751d0c58c92029c5a2",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250201"
+      ],
+      "sourceRows": 7291,
+      "parcels": 6330,
+      "accounts": 7291,
+      "repairedGeometries": 1,
+      "unlocatedRows": 0
+    },
+    {
+      "fips": "48003",
+      "county": "Andrews County",
+      "basins": [
+        "Permian Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-andrews_48003_shp.zip",
+      "sha256": "a471a36d03a2d1aa5557607f33948a4a222aa8aa52582d5930ac0788141a8d4c",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250201"
+      ],
+      "sourceRows": 10523,
+      "parcels": 10522,
+      "accounts": 10522,
+      "repairedGeometries": 3,
+      "unlocatedRows": 1
+    },
+    {
+      "fips": "48045",
+      "county": "Briscoe County",
+      "basins": [
+        "Palo Duro Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-briscoe_48045_shp.zip",
+      "sha256": "61a7d9315d1ba98864a3533f58b295f654f1308ad8fa291ed0e3423562fc878b",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250501"
+      ],
+      "sourceRows": 4091,
+      "parcels": 3445,
+      "accounts": 4091,
+      "repairedGeometries": 0,
+      "unlocatedRows": 0
+    },
+    {
+      "fips": "48033",
+      "county": "Borden County",
+      "basins": [
+        "Permian Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-borden_48033_shp.zip",
+      "sha256": "3f58a740b3eff7cb139fa12369cdb13b8b127b850371eadf96fe84f1fb4eb601",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250201"
+      ],
+      "sourceRows": 3752,
+      "parcels": 2704,
+      "accounts": 3752,
+      "repairedGeometries": 0,
+      "unlocatedRows": 0
+    },
+    {
+      "fips": "48229",
+      "county": "Hudspeth County",
+      "basins": [
+        "Permian Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-hudspeth_48229_shp.zip",
+      "sha256": "43c6b028e32fb1a5e63ff213163825183f74d7d70f56bad1a1af6d776ae20286",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250201"
+      ],
+      "sourceRows": 23954,
+      "parcels": 23497,
+      "accounts": 23954,
+      "repairedGeometries": 9,
+      "unlocatedRows": 0
+    },
+    {
+      "fips": "48165",
+      "county": "Gaines County",
+      "basins": [
+        "Permian Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-gaines_48165_shp.zip",
+      "sha256": "14e352052409eb8e8432ff53899ae651076f05cef730b7042e448881e7f69896",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250201"
+      ],
+      "sourceRows": 16580,
+      "parcels": 16576,
+      "accounts": 16576,
+      "repairedGeometries": 0,
+      "unlocatedRows": 4
+    },
+    {
+      "fips": "48317",
+      "county": "Martin County",
+      "basins": [
+        "Permian Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-martin_48317_shp.zip",
+      "sha256": "7d5c17daf257e1e2285ea532407a8e35661672ccc365cc97246f241665623d15",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250501"
+      ],
+      "sourceRows": 7256,
+      "parcels": 5779,
+      "accounts": 7255,
+      "repairedGeometries": 1,
+      "unlocatedRows": 1
+    },
+    {
+      "fips": "48445",
+      "county": "Terry County",
+      "basins": [
+        "Permian Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-terry_48445_shp.zip",
+      "sha256": "9f9233d2672169633f414215f681ebf7e43d19581e2e281daefc094176d10ed0",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250701"
+      ],
+      "sourceRows": 9113,
+      "parcels": 9113,
+      "accounts": 9113,
+      "repairedGeometries": 1,
+      "unlocatedRows": 0
+    },
+    {
+      "fips": "48105",
+      "county": "Crockett County",
+      "basins": [
+        "Permian Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-crockett_48105_shp.zip",
+      "sha256": "a78d2861063ad71301fb2fe5d43f0d5b029fff05533ea44fc75d66a547b50929",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250501"
+      ],
+      "sourceRows": 9124,
+      "parcels": 6699,
+      "accounts": 9113,
+      "repairedGeometries": 0,
+      "unlocatedRows": 11
+    },
+    {
+      "fips": "48371",
+      "county": "Pecos County",
+      "basins": [
+        "Permian Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-pecos_48371_shp.zip",
+      "sha256": "feb574a83ad9cc5befceaa8438746efd63fba44ef1edd647bf3f58993a16ea7e",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250801"
+      ],
+      "sourceRows": 14720,
+      "parcels": 12179,
+      "accounts": 14720,
+      "repairedGeometries": 3,
+      "unlocatedRows": 0
+    },
+    {
+      "fips": "48345",
+      "county": "Motley County",
+      "basins": [
+        "Palo Duro Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-motley_48345_shp.zip",
+      "sha256": "cc07217df2b569ccf358eadcaf956d2f05179bfd269f5e65760894c7de9175fd",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250801"
+      ],
+      "sourceRows": 9374,
+      "parcels": 8115,
+      "accounts": 9374,
+      "repairedGeometries": 1,
+      "unlocatedRows": 0
+    },
+    {
+      "fips": "48305",
+      "county": "Lynn County",
+      "basins": [
+        "Permian Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-lynn_48305_shp.zip",
+      "sha256": "f20bca6c2f0d54e7cac69d040bea2d5ed243db7e7f9531ce6c763dcce7c83889",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250501"
+      ],
+      "sourceRows": 7334,
+      "parcels": 7293,
+      "accounts": 7324,
+      "repairedGeometries": 5,
+      "unlocatedRows": 10
+    },
+    {
+      "fips": "48189",
+      "county": "Hale County",
+      "basins": [
+        "Permian Basin",
+        "Palo Duro Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-hale_48189_shp.zip",
+      "sha256": "b190b41d1023eb522a96e35fb06be8e4d2e785ee552148270e520f1a07c2a039",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250701"
+      ],
+      "sourceRows": 19108,
+      "parcels": 18709,
+      "accounts": 19108,
+      "repairedGeometries": 0,
+      "unlocatedRows": 0
+    },
+    {
+      "fips": "48011",
+      "county": "Armstrong County",
+      "basins": [
+        "Palo Duro Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-armstrong_48011_shp.zip",
+      "sha256": "8754eddf273aa0255730a217950c221c66972ba23cc81ca7120f3a3f97dea7a3",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250601"
+      ],
+      "sourceRows": 4058,
+      "parcels": 3536,
+      "accounts": 4058,
+      "repairedGeometries": 0,
+      "unlocatedRows": 0
+    },
+    {
+      "fips": "48115",
+      "county": "Dawson County",
+      "basins": [
+        "Permian Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-dawson_48115_shp.zip",
+      "sha256": "089a2b1e7572f508b9804cc6313ab1ba5a265de2db3ca5bcef9fb40539411932",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250501"
+      ],
+      "sourceRows": 9677,
+      "parcels": 9592,
+      "accounts": 9676,
+      "repairedGeometries": 0,
+      "unlocatedRows": 1
+    },
+    {
+      "fips": "48329",
+      "county": "Midland County",
+      "basins": [
+        "Permian Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-midland_48329_shp.zip",
+      "sha256": "ebc0f24be4d329501b2d4a94a854867e374d8d6a62735ca72df45a98d993ffbf",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250701"
+      ],
+      "sourceRows": 75646,
+      "parcels": 75640,
+      "accounts": 75645,
+      "repairedGeometries": 4,
+      "unlocatedRows": 1
+    },
+    {
+      "fips": "48069",
+      "county": "Castro County",
+      "basins": [
+        "Palo Duro Basin"
+      ],
+      "sourceUrl": "https://tnris-data-warehouse.s3.us-east-1.amazonaws.com/LCD/collection/stratmap-2025-land-parcels/items/shp/stratmap-2025-land-parcels-castro_48069_shp.zip",
+      "sha256": "357962e821372ac7954e57bdc8bafcaeac6d6cf001dce7541821e30ca5ec682a",
+      "collection": "TxGIO Land Parcels 2025",
+      "license": "CC0-1.0",
+      "sourceDates": [
+        "20250201"
+      ],
+      "sourceRows": 6466,
+      "parcels": 6236,
+      "accounts": 6466,
+      "repairedGeometries": 0,
+      "unlocatedRows": 0
+    }
+  ]
+}

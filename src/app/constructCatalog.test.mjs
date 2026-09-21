@@ -39,7 +39,8 @@ test('catalogs construct distinct layers and classification from their supplied 
     signal: b.signal,
     surface: fixtureSurface(b.signal),
   });
-  assert.equal(first.layers.length, 27);
+  assert.equal(first.layers.length, 28);
+  assert.ok(first.get('land-parcels'));
   assert.ok(first.get('ground-motion'));
   assert.ok(first.get('transit'));
   const order = first.layers.map(({ id }) => id);

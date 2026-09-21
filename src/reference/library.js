@@ -356,6 +356,29 @@ export function mountReferenceLibrary({ viewer, dataManager, layer, catalog }) {
       detail.append(status, view);
       return;
     }
+    if (item.layerId === 'land-parcels') {
+      const status = el(
+        'p',
+        'Appraisal-reported owners with dated county sources; mineral rights remain unknown without recorded evidence.',
+      );
+      const view = el('button', 'Explore land ownership', 'ref-primary');
+      view.addEventListener('click', async () => {
+        view.disabled = true;
+        try {
+          await dataManager.setEnabled('land-parcels', true, {
+            origin: 'user',
+          });
+          reveal(item);
+          catalog.get('land-parcels').flyTo();
+        } catch (error) {
+          status.textContent = error.message;
+        } finally {
+          view.disabled = false;
+        }
+      });
+      detail.append(status, view);
+      return;
+    }
     if (item.layerId === 'us-basins') {
       const status = el(
         'p',

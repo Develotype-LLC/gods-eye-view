@@ -1,3 +1,4 @@
+import { landProxy } from './land.js';
 import { referenceRecordsProxy } from './reference-records.js';
 import { texasProxy } from './texas.js';
 import { rrcProxy } from './rrc.js';
@@ -57,6 +58,7 @@ function localProviderPlugins() {
     rrcProxy(),
     texasProxy(),
     referenceRecordsProxy(),
+    landProxy(),
     keySetupEndpoint(),
   ];
 }

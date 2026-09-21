@@ -86,6 +86,15 @@ export const LANDMAN_LAYERS = [
     inspector: 'ground-motion-legend',
   },
   {
+    id: 'land-parcels',
+    group: 'Land & rights',
+    name: 'Land ownership',
+    source: 'TxGIO · county appraisal snapshots',
+    tag: 'Parcels',
+    color: '#d8be7a',
+    inspector: 'land-panel',
+  },
+  {
     id: 'ponds',
     dataset: true,
     group: 'Water & infrastructure',

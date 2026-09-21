@@ -14,6 +14,7 @@ const element = (tag, text) => {
 };
 const INSPECTORS = [
   'location-panel',
+  'land-panel',
   'texas-panel',
   'records-panel',
   'basins-panel',
@@ -57,7 +58,7 @@ export function mountLandmanWorkspace({
  <button class="lm-compare-button" data-locations>Compare locations · A → B</button>
  <form data-well-search><label for="lm-api">Find a Texas well</label><div><input id="lm-api" placeholder="API-8 or API-10" inputmode="numeric" pattern="(42)?[0-9]{8}" required><button type="submit">Find</button></div></form>
  <div class="lm-layer-tools"><label><span class="lm-sr">Search layers</span><input data-layer-search placeholder="Search layers or sources…" type="search"></label><label class="lm-active-only"><input data-active-only type="checkbox">Active only</label></div>
- <div class="lm-layer-list"></div><div class="lm-roadmap"><strong>Land & rights</strong><span>Parcels, leases and mineral ownership are not connected yet.</span></div>
+ <div class="lm-layer-list"></div>
  <footer><button data-archive>Search RRC records</button><button data-sources>Source library ↗</button><p>Dated records and estimates keep their source labels.</p></footer></aside>
  <aside class="lm-inspector" aria-label="Landman inspector" hidden><header><div><small>INSPECTOR</small><h2 data-inspector-title>Layer details</h2></div><button data-close-inspector aria-label="Close inspector">✕</button></header><div class="lm-inspector-content"></div></aside>
  <div class="lm-map-note"><span class="lm-map-dot"></span><span data-map-note>Regional context · zoom in to inspect records</span></div><div class="lm-status" role="status" aria-live="polite" hidden></div>`;
