@@ -25,3 +25,13 @@ test('point inspection uses source geometry, retained period filters and bounded
  const r=await request('/inspect?dataset=openet&longitude=-102&latitude=33&radius=500&period=2018-07&kind=ETo');assert.equal(r.status,200);assert.equal(r.body.total,9);assert.equal(r.body.features[0].contains_point,true);assert.deepEqual(calls[1].args,[-102,33,500,3,'openet','2018-07','ETo']);assert.match(calls[2].sql,/ST_Covers/);assert.match(calls[2].sql,/LIMIT 5/);assert.match(calls[1].sql,/ST_DWithin/);
  const before=calls.length;assert.equal((await request('/inspect?dataset=openet&longitude=-102&latitude=33&radius=90000')).status,400);assert.equal(calls.length,before);
 });
+test('injection heat maps bind year and aggregate full fixed equal-area cells',async()=>{
+ const calls=[];const request=fixture(async(sql,args)=>{calls.push({sql,args});return{rows:sql.startsWith('SELECT *')?[{...dataset,id:'texnet-injection'}]:[{key:'1:2',count:4,known:3,missing:1,value:12000}]};});
+ const r=await request('/viewport?dataset=texnet-injection&bbox=-104,30,-101,33&view=volume&period=2024');
+ assert.equal(r.status,200);assert.equal(r.body.mode,'injection-heat');assert.equal(r.body.units,'bbl/year');assert.equal(r.body.count,4);assert.equal(r.body.features[0].missing,1);
+ assert.deepEqual(calls[1].args,[3,'texnet-injection','volume','2024',-104,30,-101,33]);
+ assert.match(calls[1].sql,/ST_Transform\(ST_PointOnSurface\(f.geom\),5070\)/);assert.match(calls[1].sql,/floor\(ST_X\(p\)\/5000\)/);assert.match(calls[1].sql,/count\(value\)/);assert.match(calls[1].sql,/NULLIF/);
+ assert.equal((await request('/viewport?dataset=texnet-injection&bbox=-104,30,-101,33&view=volume')).status,400);
+ assert.equal((await request('/viewport?dataset=texnet-injection&bbox=-104,30,-101,33&view=volume&period=2024-01')).status,400);
+ const c=await request('/viewport?dataset=texnet-injection&bbox=-104,30,-101,33&view=capacity');assert.equal(c.body.units,'bbl/day');assert.equal(c.body.period,'');
+});

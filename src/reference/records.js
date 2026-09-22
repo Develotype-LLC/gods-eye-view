@@ -1,5 +1,21 @@
 import * as Cesium from 'cesium';
 import { assetSymbol, etColor } from './mapSymbols.js';
+export const INJECTION_COLORS = [
+  '#eff3ff',
+  '#bdd7e7',
+  '#6baed6',
+  '#3182bd',
+  '#08519c',
+  '#54278f',
+];
+export function injectionColor(value, metric) {
+  if (value == null) return '#969696';
+  const cuts =
+    metric === 'capacity'
+      ? [10000, 50000, 100000, 250000, 500000]
+      : [1000000, 5000000, 10000000, 25000000, 50000000];
+  return INJECTION_COLORS[cuts.filter((n) => value >= n).length];
+}
 export const REFERENCE_COLORS = {
   'texnet-seismic': '#ff7b64',
   'texnet-injection': '#c197ff',
@@ -30,6 +46,7 @@ export function createReferenceRecordsLayer() {
     results = new Map(),
     periods = new Map(),
     measurements = new Map(),
+    displays = new Map(),
     listeners = new Set(),
     picks = new Map();
   const notify = () => listeners.forEach((fn) => fn());
@@ -68,6 +85,7 @@ export function createReferenceRecordsLayer() {
             bbox: box().join(','),
             period: periods.get(id) || '',
             kind: measurements.get(id) || 'ET',
+            view: displays.get(id) || 'points',
           }),
         request.signal,
       );
@@ -90,9 +108,13 @@ export function createReferenceRecordsLayer() {
           cluster = result.mode === 'clusters';
         picks.set(key, { dataset: id, feature: f, cluster });
         const color =
-          id === 'openet'
-            ? Cesium.Color.fromCssColorString(etColor(f.value))
-            : base;
+          result.mode === 'injection-heat'
+            ? Cesium.Color.fromCssColorString(
+                injectionColor(f.value, result.metric),
+              )
+            : id === 'openet'
+              ? Cesium.Color.fromCssColorString(etColor(f.value))
+              : base;
         source.entities.add({
           id: key,
           position: Cesium.Cartesian3.fromDegrees(f.longitude, f.latitude),
@@ -117,7 +139,9 @@ export function createReferenceRecordsLayer() {
                   height: 18,
                   disableDepthTestDistance: Infinity,
                   heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
-                  show: !(id === 'openet' && f.geometry),
+                  show:
+                    result.mode !== 'injection-heat' &&
+                    !(id === 'openet' && f.geometry),
                 },
               }),
         });
@@ -142,7 +166,13 @@ export function createReferenceRecordsLayer() {
                   Cesium.Cartesian3.fromDegreesArray(rings[0].flat()),
                   rings.slice(1).map(hierarchy),
                 ),
-                material: color.withAlpha(id === 'openet' ? 0.65 : 0.35),
+                material: color.withAlpha(
+                  result.mode === 'injection-heat'
+                    ? 0.65
+                    : id === 'openet'
+                      ? 0.65
+                      : 0.35,
+                ),
                 classificationType: Cesium.ClassificationType.BOTH,
               },
             });
@@ -275,7 +305,31 @@ export function createReferenceRecordsLayer() {
         });
       }
     },
+    setDisplay(value) {
+      if (selected !== 'texnet-injection') return;
+      remove(selected);
+      displays.set(selected, value);
+      if (value === 'volume' && !periods.get(selected))
+        periods.set(
+          selected,
+          metadata
+            .find((d) => d.id === selected)
+            ?.periods?.filter((p) => /^\d{4}$/.test(p))
+            .at(-1) || '2025',
+        );
+      detail = null;
+      void refresh(selected);
+      notify();
+    },
     setPeriod(value) {
+      if (
+        selected === 'texnet-injection' &&
+        displays.get(selected) === 'volume' &&
+        !/^\d{4}$/.test(value)
+      )
+        return;
+      if (selected === 'texnet-injection') remove(selected);
+      if (detail?.heat) detail = null;
       periods.set(selected, value);
       void refresh(selected);
       notify();
@@ -289,6 +343,17 @@ export function createReferenceRecordsLayer() {
       const item = picks.get(id);
       if (!item) return;
       const f = item.feature;
+      if (results.get(item.dataset)?.mode === 'injection-heat') {
+        selected = item.dataset;
+        detailIntent++;
+        detail = {
+          heat: f,
+          metric: results.get(item.dataset).metric,
+          period: results.get(item.dataset).period,
+        };
+        notify();
+        return;
+      }
       if (item.cluster) {
         const dx = Math.max((f.east - f.west) * 0.1, 0.008),
           dy = Math.max((f.north - f.south) * 0.1, 0.008);
@@ -350,6 +415,7 @@ export function createReferenceRecordsLayer() {
         active: [...active],
         results: new Map(results),
         loading: [...requests.keys()],
+        display: displays.get(selected) || 'points',
         period: periods.get(selected) || '',
         measurement: measurements.get(selected) || 'ET',
         detail,
@@ -359,6 +425,7 @@ export function createReferenceRecordsLayer() {
     },
     getFilters(id) {
       return {
+        view: displays.get(id) || 'points',
         period: periods.get(id) || '',
         kind: measurements.get(id) || 'ET',
       };

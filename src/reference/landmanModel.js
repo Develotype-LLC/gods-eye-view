@@ -44,7 +44,7 @@ export const LANDMAN_LAYERS = [
     id: 'texnet-injection',
     dataset: true,
     group: 'Oil & gas',
-    name: 'Injection reporting',
+    name: 'Injection capacity & reporting',
     source: 'TexNet · reporting subset',
     tag: 'History',
     color: '#c197ff',

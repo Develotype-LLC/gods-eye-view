@@ -1,7 +1,7 @@
 import { themeLegend } from './landThemes.js';
 import { DENSITY_SCALE } from './densityModel.js';
 import { LANDMAN_LAYERS } from './landmanModel.js';
-import { REFERENCE_COLORS } from './records.js';
+import { REFERENCE_COLORS, INJECTION_COLORS } from './records.js';
 import { assetSymbol, ET_COLORS } from './mapSymbols.js';
 const node = (tag, text) => {
   const el = document.createElement(tag);
@@ -127,6 +127,27 @@ export function mountMapLegend({ root, catalog, enabled, inspect }) {
               ),
             );
         }
+      }
+      if (result?.mode === 'injection-heat') {
+        icon.hidden = true;
+        const capacity = result.metric === 'capacity';
+        description = capacity
+          ? 'Permitted snapshot · bbl/day per 5 × 5 km cell; not spare capacity.'
+          : `Reported ${result.period} injection · bbl/year per 5 × 5 km cell; reporting may be partial or overlapping.`;
+        const labels = capacity
+          ? ['0–10k', '10k–50k', '50k–100k', '100k–250k', '250k–500k', '500k+']
+          : ['0–1m', '1m–5m', '5m–10m', '10m–25m', '25m–50m', '50m+'];
+        labels.forEach((label, i) => {
+          const key = node('small', '■ ' + label);
+          key.style.color = INJECTION_COLORS[i];
+          row.append(key);
+        });
+        row.append(
+          node(
+            'small',
+            'Gray: unknown · missing values excluded · full cells, fixed across zoom and years',
+          ),
+        );
       }
       if (item.id === 'openet') {
         icon.hidden = true;

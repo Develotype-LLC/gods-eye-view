@@ -25,7 +25,7 @@ export function mountReferenceRecordsPanel({ viewer, dataManager, layer }) {
   panel.innerHTML = `<header><strong>WELLS, WATER & ENVIRONMENT</strong><button data-hide aria-label="Hide reference data explorer">✕</button></header>
  <details data-layers><summary>Visible map layers</summary><div data-toggles></div></details>
  <div data-legend></div><label>Inspect collection<select data-dataset aria-label="Reference collection"></select></label>
- <p data-status></p><p data-note></p><div data-map-controls><button data-fit>Zoom to coverage</button><label data-period-label>Reporting period<select data-period></select></label><label data-measurement-label>Measurement<select data-measurement><option value="ET">Actual ET · mm/month</option><option value="ETo">Reference ETo · mm/month</option></select></label><p data-et-legend>ET / ETo: pale blue 0 → dark blue 300 mm/month (capped). Gray = no observation; zero is a measured value.</p></div>
+ <p data-status></p><p data-note></p><div data-map-controls><button data-fit>Zoom to coverage</button><label data-injection-label>Injection map<select data-injection aria-label="Injection map"><option value="points">Well locations</option><option value="capacity">Permitted capacity heat map · bbl/day</option><option value="volume">Annual reported injection heat map · bbl/year</option></select></label><p data-injection-note></p><label data-period-label>Reporting period<select data-period></select></label><label data-measurement-label>Measurement<select data-measurement><option value="ET">Actual ET · mm/month</option><option value="ETo">Reference ETo · mm/month</option></select></label><p data-et-legend>ET / ETo: pale blue 0 → dark blue 300 mm/month (capped). Gray = no observation; zero is a measured value.</p></div>
  <p data-view role="status"></p><form data-search><label>RRC record type<select data-kind><option value="">All API-linked records</option></select></label><label>Texas API-8<input data-api placeholder="10300256" pattern="[0-9]{8}"></label><label>Or source lease / gas-well / operator ID<input data-key placeholder="Preserve source leading zeros"></label><button>Search downloaded RRC records</button></form>
  <div data-detail></div><footer><small>Source snapshots • click a marker for records; click clusters to zoom.</small></footer>`;
   const sections = inspectorSections(panel, [
@@ -64,6 +64,7 @@ export function mountReferenceRecordsPanel({ viewer, dataManager, layer }) {
   );
   on('[data-dataset]', 'change', (e) => void layer.showDataset(e.target.value));
   on('[data-fit]', 'click', () => layer.flyTo());
+  on('[data-injection]', 'change', (e) => layer.setDisplay(e.target.value));
   on('[data-period]', 'change', (e) => layer.setPeriod(e.target.value));
   on('[data-measurement]', 'change', (e) =>
     layer.setMeasurement(e.target.value),
@@ -131,17 +132,26 @@ export function mountReferenceRecordsPanel({ viewer, dataManager, layer }) {
     panel.querySelector('[data-note]').textContent = d.note;
     const isArchive = s.selected === 'rrc-records',
       et = s.selected === 'openet';
+    const injection = s.selected === 'texnet-injection';
+    panel.querySelector('[data-injection-label]').hidden = !injection;
+    panel.querySelector('[data-injection-note]').hidden = !injection;
+    panel.querySelector('[data-injection]').value = s.display;
+    panel.querySelector('[data-injection-note]').textContent =
+      'Heat maps sum source values in fixed 5 × 5 km equal-area cells. Capacity is the permit snapshot, not available capacity; zero/absent limits are unknown. Annual totals are reported rows, may be partial or overlapping, and are not verified complete-year totals. Gray means no usable value; missing wells are excluded from sums. Select a year for volume.';
     panel.querySelector('[data-map-controls]').hidden = isArchive;
     panel.querySelector('[data-search]').hidden = !isArchive;
     panel.querySelector('[data-measurement-label]').hidden = !et;
     panel.querySelector('[data-et-legend]').hidden = !et;
-    panel.querySelector('[data-period-label]').hidden = !d.periods?.length;
-    if (lastSelected !== s.selected) {
-      lastSelected = s.selected;
+    panel.querySelector('[data-period-label]').hidden =
+      !d.periods?.length || (injection && s.display === 'capacity');
+    if (lastSelected !== s.selected + s.display) {
+      lastSelected = s.selected + s.display;
       panel
         .querySelector('[data-period]')
         .replaceChildren(
-          new Option('All periods', ''),
+          ...(injection && s.display === 'volume'
+            ? []
+            : [new Option('All periods', '')]),
           ...(d.periods || []).map((p) => new Option(p, p)),
         );
     }
@@ -149,11 +159,13 @@ export function mountReferenceRecordsPanel({ viewer, dataManager, layer }) {
     panel.querySelector('[data-measurement]').value = s.measurement;
     const result = s.results.get(s.selected);
     const hint =
-      result?.mode === 'clusters'
-        ? 'clustered; zoom for individual records'
-        : et
-          ? 'click a field polygon'
-          : 'click a marker';
+      result?.mode === 'injection-heat'
+        ? 'fixed 5 km cells · click a cell for totals and missing values'
+        : result?.mode === 'clusters'
+          ? 'clustered; zoom for individual records'
+          : et
+            ? 'click a field polygon'
+            : 'click a marker';
     panel.querySelector('[data-view]').textContent =
       s.error ||
       (s.loading.includes(s.selected)
@@ -177,6 +189,37 @@ export function mountReferenceRecordsPanel({ viewer, dataManager, layer }) {
     sections.show(s.detail || s.archive ? s.detail?.key || 'records' : null);
     if (s.detail) {
       const d = s.detail;
+      if (d.heat) {
+        const f = d.heat,
+          units = d.metric === 'capacity' ? 'bbl/day' : 'bbl/year';
+        box.append(
+          node(
+            'h3',
+            d.metric === 'capacity'
+              ? 'Permitted injection capacity · snapshot'
+              : 'Reported injection · ' + d.period,
+          ),
+          node(
+            'strong',
+            f.value == null
+              ? 'No usable source value'
+              : Number(f.value).toLocaleString(undefined, {
+                  maximumFractionDigits: 0,
+                }) +
+                  ' ' +
+                  units,
+          ),
+          node(
+            'p',
+            `5 × 5 km cell · ${f.known} wells with values · ${f.missing} without usable values · ${f.count} mapped wells`,
+          ),
+          node(
+            'p',
+            'TexNet local reporting subset. Cell totals include full edge cells. Capacity is not spare capacity. Annual reported rows may be incomplete or overlap; missing is not zero. See Layer settings to switch maps or years.',
+          ),
+        );
+        return;
+      }
       if (d.loading) {
         box.append(node('p', 'Loading records…'));
         return;
