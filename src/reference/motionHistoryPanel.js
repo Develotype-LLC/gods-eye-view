@@ -63,12 +63,12 @@ export function mountMotionHistoryPanel(legend, layer) {
       ),
     );
     const width = 300,
-      height = 140,
+      height = 170,
       ys = value.points.map((p) => p.relativeMm),
       min = Math.min(0, ...ys),
       span = Math.max(1, Math.max(0, ...ys) - min),
       t0 = Date.parse(value.start),
-      dt = Date.parse(value.end) - t0;
+      dt = Math.max(1, Date.parse(value.end) - t0);
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
     svg.setAttribute('role', 'img');
@@ -76,11 +76,34 @@ export function mountMotionHistoryPanel(legend, layer) {
       'aria-label',
       'Displacement observations relative to the first date in the selected period',
     );
+    const label = (x, y, value) => {
+      const t = document.createElementNS(svg.namespaceURI, 'text');
+      t.setAttribute('x', x);
+      t.setAttribute('y', y);
+      t.setAttribute('fill', 'currentColor');
+      t.setAttribute('font-size', '10');
+      t.textContent = value;
+      svg.append(t);
+    };
+    const zero = document.createElementNS(svg.namespaceURI, 'line');
+    zero.setAttribute('x1', '40');
+    zero.setAttribute('x2', '290');
+    zero.setAttribute('y1', String(125 - ((0 - min) / span) * 105));
+    zero.setAttribute('y2', zero.getAttribute('y1'));
+    zero.setAttribute('stroke', '#b8cbc6');
+    zero.setAttribute('stroke-dasharray', '3 3');
+    svg.append(zero);
+    label('0', '12', 'LOS mm');
+    label('0', '24', (min + span).toFixed(1));
+    label('0', '125', min.toFixed(1));
+    label('40', '148', value.start.slice(0, 10));
+    label('226', '148', value.end.slice(0, 10));
+    label('120', '165', 'Observation date');
     for (const p of value.points) {
       const dot = document.createElementNS(svg.namespaceURI, 'circle');
       dot.setAttribute(
         'cx',
-        String(8 + ((Date.parse(p.date) - t0) / dt) * 284),
+        String(40 + ((Date.parse(p.date) - t0) / dt) * 250),
       );
       dot.setAttribute('cy', String(125 - ((p.relativeMm - min) / span) * 105));
       dot.setAttribute('r', '2.5');
@@ -113,7 +136,15 @@ export function mountMotionHistoryPanel(legend, layer) {
         text('td', p.date.slice(0, 10)),
         text('td', p.relativeMm.toFixed(2) + ' mm'),
       );
-      tr.title = p.source;
+      const source = text('td', '');
+      if (/^https?:\/\//.test(p.source || '')) {
+        const link = text('a', 'Source record');
+        link.href = p.source;
+        link.target = '_blank';
+        link.rel = 'noopener';
+        source.append(link);
+      } else source.textContent = p.source || 'Source identifier unavailable';
+      tr.append(source);
       table.append(tr);
     }
     details.append(table);

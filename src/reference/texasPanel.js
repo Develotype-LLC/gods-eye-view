@@ -1,3 +1,4 @@
+import { inspectorSections } from './inspectorSections.js';
 import * as Cesium from 'cesium';
 export function mountTexasPanel({
   viewer,
@@ -11,6 +12,11 @@ export function mountTexasPanel({
   panel.hidden = true;
   panel.setAttribute('aria-label', 'Texas statewide wells');
   panel.innerHTML = `<header><strong>TEXAS WELL DATABASE</strong><button data-hide aria-label="Hide Texas wells">✕</button></header><p data-status></p><label>Map display<select data-view-mode><option value="auto">Density overview / points close up</option><option value="density">Fixed-cell density</option><option value="locations">Locations / count clusters</option></select></label><label>Density cell size<select data-cell><option value="10">10 km × 10 km</option><option value="25" selected>25 km × 25 km</option><option value="50">50 km × 50 km</option></select></label><p>Fixed equal-area cells. Colors show inventory locations per km², not production. Edge cells include locations outside the map window.</p><div data-bin></div><button data-texas>View all Texas</button><label>RRC GIS classification<select data-category><option value="">All classifications</option></select></label><form data-search><label>Find Texas API-8 or API-10<input data-api placeholder="10300256" maxlength="10" inputmode="numeric"></label><button>Find well</button></form><p data-view role="status"></p><div data-detail></div><small>GIS locations may include permits, plugged wells and duplicate API locations. Source classification is not proof of current operation.</small>`;
+  const sections = inspectorSections(panel, [
+    panel.querySelector('[data-bin]'),
+    panel.querySelector('[data-detail]'),
+  ]);
+  sections.show(null);
   document.body.append(panel);
   const text = (tag, value) => {
     const e = document.createElement(tag);
@@ -32,7 +38,8 @@ export function mountTexasPanel({
   });
   let populated = false,
     lastDetail,
-    lastHistory;
+    lastHistory,
+    selectedLocation = null;
   for (const selector of ['[data-view-mode]', '[data-cell]'])
     panel
       .querySelector(selector)
@@ -74,11 +81,14 @@ export function mountTexasPanel({
         ),
         text(
           'p',
-          `Selected ${s.bin.cellKm} km equal-area cell. Zoom in for individual locations.`,
+          `Selected ${s.bin.cellKm} km equal-area cell. Show locations to inspect individual wells; dense views use count clusters.`,
         ),
       );
-      const zoom = text('button', 'Zoom to selected cell');
-      zoom.onclick = () => layer.zoomBin();
+      const zoom = text('button', 'Show locations in this cell');
+      zoom.onclick = () => {
+        layer.zoomBin();
+        layer.setView('locations', s.cellKm);
+      };
       bin.append(zoom);
     }
     const viewHint =
@@ -94,13 +104,22 @@ export function mountTexasPanel({
         : s.result
           ? `${s.result.count.toLocaleString()} locations in view · ${viewHint}`
           : '');
+    sections.show(
+      s.bin
+        ? `cell:${s.bin.x}:${s.bin.y}`
+        : s.detail
+          ? 'well:' + (selectedLocation || s.detail.matches[0]?.id)
+          : null,
+    );
     if (lastDetail === s.detail && lastHistory === s.history) return;
     lastDetail = s.detail;
     lastHistory = s.history;
     const box = panel.querySelector('[data-detail]');
     box.replaceChildren();
     if (!s.detail) return;
-    const w = s.detail.matches[0];
+    const w =
+      s.detail.matches.find((w) => w.id === selectedLocation) ||
+      s.detail.matches[0];
     if (!w) {
       box.append(text('p', 'No matching well location.'));
       return;
@@ -110,16 +129,45 @@ export function mountTexasPanel({
       text('p', `${w.category} · well ${w.well_number || 'not recorded'}`),
       text(
         'p',
-        `Location source: ${w.raw.GIS_LOCATION_SOURCE || 'not recorded'}`,
+        `Location source: ${w.raw?.GIS_LOCATION_SOURCE || 'not recorded'}`,
       ),
     );
-    if (s.detail.matches.length > 1)
-      box.append(
-        text(
-          'p',
-          `${s.detail.matches.length} GIS locations match this API; the first is shown.`,
+    if (s.detail.matches.length > 1) {
+      const label = text('label', 'GIS location for this API'),
+        select = document.createElement('select');
+      for (const match of s.detail.matches)
+        select.append(
+          new Option(
+            `${match.category} · well ${match.well_number || 'unknown'} · GIS ${match.id} · ${Number(match.latitude).toFixed(5)}, ${Number(match.longitude).toFixed(5)}`,
+            match.id,
+          ),
+        );
+      select.value = w.id;
+      select.onchange = () => {
+        selectedLocation = select.value;
+        lastDetail = null;
+        sync();
+      };
+      label.append(select);
+      box.append(label);
+    }
+    box.append(
+      text(
+        'p',
+        `GIS ${w.id} · ${Number(w.latitude).toFixed(5)}, ${Number(w.longitude).toFixed(5)} · source classification, not verified operating status`,
+      ),
+    );
+    const zoom = text('button', 'Zoom to this well location');
+    zoom.onclick = () =>
+      viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(
+          w.longitude,
+          w.latitude,
+          2000,
         ),
-      );
+        duration: 1,
+      });
+    box.append(zoom);
     if (w.api8 && referenceLayer) {
       const b = text('button', 'Open downloaded RRC records');
       b.onclick = async () => {
@@ -163,6 +211,18 @@ export function mountTexasPanel({
             `${s.history.rows?.length ?? 0} permit-month records · saved ${s.history.fetchedAt ? new Date(s.history.fetchedAt).toLocaleString() : 'not applicable'}`,
           ),
         );
+        const latest = [...(s.history.rows || [])].sort((a, b) =>
+          b.formatted_date.localeCompare(a.formatted_date),
+        )[0];
+        if (latest)
+          box.append(
+            text(
+              'strong',
+              `Latest reported month ${latest.formatted_date.slice(0, 7)} · UIC ${latest.uic_no} · ${latest.vol_liq == null ? 'Volume missing' : Number(latest.vol_liq).toLocaleString() + ' bbl'} · ${Number(latest.inj_press_avg) > 0 ? latest.inj_press_avg + ' psi average' : 'Pressure unreported / ambiguous'}`,
+            ),
+          );
+        const historyDetails = document.createElement('details');
+        historyDetails.append(text('summary', 'All permit-month observations'));
         const wrap = document.createElement('div');
         wrap.className = 'injection-table-scroll';
         const table = document.createElement('table');
@@ -186,7 +246,8 @@ export function mountTexasPanel({
           table.append(tr);
         }
         wrap.append(table);
-        box.append(wrap);
+        historyDetails.append(wrap);
+        box.append(historyDetails);
       }
     }
   }

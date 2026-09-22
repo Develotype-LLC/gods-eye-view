@@ -171,46 +171,9 @@ export function ownerWorkspace(db) {
           )
         ).rows
       : [];
-    let parcels = [],
-      sourceName = profile?.name || '',
-      total = 0;
-    if (!subject.startsWith('manual:')) {
-      const byParcel = subject.startsWith('parcel:');
-      if (byParcel && !validId(subject.slice(7)))
-        throw fail(400, 'Invalid parcel');
-      const key = subject.slice(byParcel ? 7 : 6);
-      const route = q.get('parcels');
-      let ids = [];
-      if (route) {
-        ids = route.split(',');
-        if (ids.length > 3000 || ids.some((id) => !validId(id)))
-          throw fail(400, 'Invalid route parcels');
-      }
-      const where = byParcel
-        ? 'p.id=$1::bigint'
-        : `EXISTS(SELECT 1 FROM landman.land_account a WHERE a.parcel_id=p.id AND a.owner_key=$1)`;
-      const args = [key, ids];
-      const from = `FROM landman.land_parcel p JOIN landman.land_county c ON c.snapshot_id=p.snapshot_id JOIN landman.land_snapshot s ON s.id=p.snapshot_id WHERE ${where} AND (cardinality($2::bigint[])=0 OR p.id=ANY($2::bigint[]))`;
-      total = Number(
-        (await db().query('SELECT count(*)::int AS n ' + from, args)).rows[0].n,
-      );
-      parcels = (
-        await db().query(
-          `SELECT p.id,p.source_key,p.area_acres,c.name AS county,s.metadata AS source,ST_AsGeoJSON(ST_SimplifyPreserveTopology(p.geom,0.00001),6)::json AS geometry ${from} ORDER BY p.id LIMIT 100`,
-          args,
-        )
-      ).rows;
-      if (!byParcel)
-        sourceName =
-          (
-            await db().query(
-              'SELECT name FROM landman.land_owner WHERE owner_key=$1',
-              [key],
-            )
-          ).rows[0]?.name || sourceName;
-      else sourceName = `Parcel ${key} · ownership research`;
-      if (!sourceName) throw fail(404, 'Owner record not found');
-    }
+    const { parcels, sourceName, total } = subject.startsWith('manual:')
+      ? { parcels: [], sourceName: profile?.name || '', total: 0 }
+      : await publicOwnerSummary((sql, args) => db().query(sql, args), q);
     return {
       project,
       profile,
@@ -333,4 +296,56 @@ export function ownerWorkspace(db) {
     }
   }
   return { get, save, createProject };
+}
+
+// Public appraisal data only. Private profile/history reads remain membership-gated.
+export async function publicOwnerSummary(query, q) {
+  const subject = q.get('subject') || '';
+  if (
+    !/^(owner:.{1,300}|parcel:[0-9]{1,14})$/.test(subject) ||
+    subject === 'owner:OWNER NOT SUPPLIED'
+  )
+    throw fail(400, 'Invalid public owner subject');
+  let parcels = [],
+    sourceName = '',
+    total = 0;
+  if (!subject.startsWith('manual:')) {
+    const byParcel = subject.startsWith('parcel:');
+    if (byParcel && !validId(subject.slice(7)))
+      throw fail(400, 'Invalid parcel');
+    const key = subject.slice(byParcel ? 7 : 6);
+    const route = q.get('parcels');
+    let ids = [];
+    if (route) {
+      ids = route.split(',');
+      if (ids.length > 3000 || ids.some((id) => !validId(id)))
+        throw fail(400, 'Invalid route parcels');
+    }
+    const where = byParcel
+      ? 'p.id=$1::bigint'
+      : `EXISTS(SELECT 1 FROM landman.land_account a WHERE a.parcel_id=p.id AND a.owner_key=$1)`;
+    const args = [key, ids];
+    const from = `FROM landman.land_parcel p JOIN landman.land_county c ON c.snapshot_id=p.snapshot_id JOIN landman.land_snapshot s ON s.id=p.snapshot_id WHERE ${where} AND cardinality(p.basins)>0 AND (cardinality($2::bigint[])=0 OR p.id=ANY($2::bigint[]))`;
+    total = Number(
+      (await query('SELECT count(*)::int AS n ' + from, args)).rows[0].n,
+    );
+    parcels = (
+      await query(
+        `SELECT p.id,p.source_key,p.area_acres,c.name AS county,s.metadata AS source,ST_AsGeoJSON(ST_SimplifyPreserveTopology(p.geom,0.00001),6)::json AS geometry ${from} ORDER BY p.id LIMIT 100`,
+        args,
+      )
+    ).rows;
+    if (!byParcel)
+      sourceName =
+        (
+          await query(
+            'SELECT name FROM landman.land_owner WHERE owner_key=$1',
+            [key],
+          )
+        ).rows[0]?.name || sourceName;
+    else sourceName = `Parcel ${key} · ownership research`;
+    if (!sourceName) throw fail(404, 'Owner record not found');
+  }
+
+  return { sourceName, parcels, total, truncated: total > 100 };
 }

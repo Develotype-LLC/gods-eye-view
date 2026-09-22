@@ -139,7 +139,36 @@ export function mountLandmanWorkspace({
       if (panel && panel.parentElement !== content) content.append(panel);
     }
   }
+  const focusMap = element('button', 'Focus map');
+  focusMap.type = 'button';
+  focusMap.setAttribute('aria-pressed', 'false');
+  root.querySelector('.lm-top-actions').append(focusMap);
+  focusMap.addEventListener('click', () => {
+    const active = root.classList.toggle('lm-focus-map');
+    focusMap.setAttribute('aria-pressed', String(active));
+    focusMap.textContent = active ? 'Show layers' : 'Focus map';
+  });
+  const inspectorTrail = [];
+  let returning = false;
+  const back = element('button', 'Back to previous details');
+  back.className = 'lm-inspector-back';
+  back.hidden = true;
+  inspector.querySelector('header').after(back);
+  back.addEventListener('click', () => {
+    const entry = inspectorTrail.pop();
+    if (!entry) return;
+    returning = true;
+    setInspector(entry.item, { select: false });
+    returning = false;
+    inspector.scrollTop = entry.scroll;
+  });
   function setInspector(item, { select = true } = {}) {
+    const target = item?.dataset ? 'records-panel' : item?.inspector;
+    const changed = target !== currentInspector;
+    if (changed && currentItem && currentInspector && !returning) {
+      inspectorTrail.push({ item: currentItem, scroll: inspector.scrollTop });
+      if (inspectorTrail.length > 12) inspectorTrail.shift();
+    }
     currentItem = item;
     currentInspector = item
       ? item.dataset
@@ -156,7 +185,14 @@ export function mountLandmanWorkspace({
     if (item) {
       root.querySelector('[data-inspector-title]').textContent = item.name;
       if (item.dataset && select) records.select(item.id);
+      if (changed) {
+        inspector.scrollTop = 0;
+        const heading = root.querySelector('[data-inspector-title]');
+        heading.tabIndex = -1;
+        heading.focus({ preventScroll: true });
+      }
     }
+    back.hidden = !inspectorTrail.length;
   }
   function updateInspectorNotice() {
     let notice = content.querySelector('.lm-inspector-notice');
@@ -166,7 +202,8 @@ export function mountLandmanWorkspace({
       content.prepend(notice);
     }
     const item = LANDMAN_LAYERS.find((l) => l.id === currentItem?.id);
-    notice.hidden = !item || enabled(item);
+    notice.hidden =
+      !item || enabled(item) || currentInspector === 'location-panel';
     if (notice.hidden) return;
     notice.replaceChildren(
       element('p', item.source + ' · ' + item.tag),
@@ -459,6 +496,16 @@ export function mountLandmanWorkspace({
         (l) => l.id === (datasetId || layerId),
       ) || { id: layerId, inspector: 'injection-panel', name };
       setInspector(item, { select: false });
+    },
+    { signal: abort.signal },
+  );
+  document.addEventListener(
+    'landman:parcel',
+    (event) => {
+      void action(async () => {
+        await dataManager.setEnabled('land-parcels', true, { origin: 'user' });
+        await catalog.get('land-parcels').inspectId(event.detail.id);
+      });
     },
     { signal: abort.signal },
   );

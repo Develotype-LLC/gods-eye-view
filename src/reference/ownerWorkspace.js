@@ -69,7 +69,7 @@ export function mountOwnerWorkspace({ viewer, openInspector }) {
   const panel = node('section');
   panel.id = 'owner-workspace-panel';
   panel.setAttribute('aria-label', 'Owner relationship workspace');
-  panel.innerHTML = `<p>Private relationship records · shared only with this project’s members. Appraisal names remain unverified identity groups.</p><label>Relationship project<select data-project></select></label><details><summary>Create a separate private project</summary><form data-new-project><label>Project or client name<input data-project-name maxlength="120" required></label><p>Only your login will have access. Sharing additional projects requires a membership change.</p><button>Create private project</button></form></details><div class="ow-actions"><button data-directory>Saved owners and research</button><button data-back>Back to route or land</button></div><form data-search><label>Find recorded owners<input data-query minlength="2" maxlength="100" placeholder="Owner name"></label><button>Search owners</button><button type="button" data-new>Add owner we already know</button></form><div data-matches></div><p data-message role="status" aria-live="polite"></p><div data-profile hidden><h3 data-title></h3><p data-identity></p><div class="ow-actions"><button data-highlight>Highlight listed parcels</button><button data-clear-highlight>Clear highlight</button><button data-all>Show other mapped parcels</button></div><p data-parcel-count></p><div data-parcels></div><form data-edit>${fields.map(([key, label, max]) => `<label>${label}${options[key] ? `<select data-field="${key}">${options[key].map(([value, text]) => `<option value="${value}">${text}</option>`).join('')}</select>` : ['notes', 'basis', 'scope', 'contact', 'nextAction'].includes(key) ? `<textarea data-field="${key}" maxlength="${max}" rows="3"></textarea>` : `<input data-field="${key}" type="${key.endsWith('On') ? 'date' : 'text'}" ${max ? `maxlength="${max}"` : ''} ${key === 'name' ? 'required' : ''}>`}</label>`).join('')}<p>Willingness is a dated team assessment for the selected transaction and scope, not a probability or permission. Save each transaction before switching. Follow-up dates are a worklist, not automatic reminders.</p><button data-save>Save owner record</button><button type="button" data-reload>Discard edits / reload saved record</button></form><p data-saved></p><p data-assessment-author></p><details><summary>Assessment and edit history</summary><div data-history></div></details></div>`;
+  panel.innerHTML = `<p>Public appraisal summaries · private relationship notes are available only to project members. Appraisal names are not verified legal identities.</p><label>Relationship project<select data-project></select></label><details><summary>Create a separate private project</summary><form data-new-project><label>Project or client name<input data-project-name maxlength="120" required></label><p>Only your login will have access. Sharing additional projects requires a membership change.</p><button>Create private project</button></form></details><div class="ow-actions"><button data-directory>Saved owners and research</button><button data-back>Back to route or land</button></div><form data-search><label>Find recorded owners<input data-query minlength="2" maxlength="100" placeholder="Owner name"></label><button>Search owners</button><button type="button" data-new>Add owner we already know</button></form><div data-matches></div><p data-message role="status" aria-live="polite"></p><div data-profile hidden><h3 data-title></h3><p data-identity></p><div class="ow-actions"><button data-highlight>Highlight listed parcels</button><button data-clear-highlight>Clear highlight</button><button data-all>Show other mapped parcels</button></div><p data-parcel-count></p><div data-parcels></div><form data-edit>${fields.map(([key, label, max]) => `<label>${label}${options[key] ? `<select data-field="${key}">${options[key].map(([value, text]) => `<option value="${value}">${text}</option>`).join('')}</select>` : ['notes', 'basis', 'scope', 'contact', 'nextAction'].includes(key) ? `<textarea data-field="${key}" maxlength="${max}" rows="3"></textarea>` : `<input data-field="${key}" type="${key.endsWith('On') ? 'date' : 'text'}" ${max ? `maxlength="${max}"` : ''} ${key === 'name' ? 'required' : ''}>`}</label>`).join('')}<p>Willingness is a dated team assessment for the selected transaction and scope, not a probability or permission. Save each transaction before switching. Follow-up dates are a worklist, not automatic reminders.</p><button data-save>Save owner record</button><button type="button" data-reload>Discard edits / reload saved record</button></form><p data-saved></p><p data-assessment-author></p><details><summary>Assessment and edit history</summary><div data-history></div></details></div>`;
   const worklist = node('form');
   worklist.dataset.worklist = '';
   worklist.hidden = true;
@@ -90,6 +90,16 @@ export function mountOwnerWorkspace({ viewer, openInspector }) {
   const overview = node('div');
   overview.dataset.profileSummary = '';
   editDisclosure.before(overview);
+  const setup = node('details');
+  setup.className = 'lm-layer-settings';
+  setup.open = true;
+  setup.append(node('summary', 'Find owners & private project settings'));
+  const profileBox = panel.querySelector('[data-profile]');
+  const back = panel.querySelector('[data-back]');
+  const statusBox = panel.querySelector('[data-message]');
+  for (const child of [...panel.children])
+    if (child !== profileBox && child !== statusBox) setup.append(child);
+  panel.append(back, statusBox, profileBox, setup);
   document.body.append(panel);
   const abort = new AbortController(),
     highlight = new Cesium.CustomDataSource('Owner profile parcel highlights');
@@ -111,7 +121,7 @@ export function mountOwnerWorkspace({ viewer, openInspector }) {
     get(s).addEventListener(type, fn, { signal: abort.signal });
   async function api(path, body) {
     const r = await fetch('/api/reference/land/' + path, {
-      signal: abort.signal,
+      signal: AbortSignal.any([abort.signal, AbortSignal.timeout(30000)]),
       ...(body
         ? {
             method: 'POST',
@@ -157,16 +167,20 @@ export function mountOwnerWorkspace({ viewer, openInspector }) {
     openInspector({ inspector: panel.id, name: 'Owners & relationships' });
   }
   async function initialize() {
-    if (project) return;
+    if (project) return true;
     const d = await api('owner-projects');
     get('[data-project]').replaceChildren(
       ...d.projects.map((p) => new Option(p.name, p.id)),
     );
     project = String(d.projects[0]?.id || '');
+    get('[data-new]').disabled = !project;
+    get('[data-directory]').disabled = !project;
+    get('[data-new-project]').closest('details').hidden = !project;
     if (!project)
-      throw Error(
-        'No private relationship project is assigned to your login. Public appraisal parcels remain available in Land & owners; project membership must be set up separately.',
+      message(
+        'Public ownership is available. Private relationship notes require an assigned project; ask your project administrator for access.',
       );
+    return Boolean(project);
   }
   function draw(list) {
     highlight.entities.removeAll();
@@ -210,12 +224,15 @@ export function mountOwnerWorkspace({ viewer, openInspector }) {
     for (const [k] of fields)
       get(`[data-field="${k}"]`).value = data[k] ?? defaults[k];
   }
-  function render(d) {
+  function render(d, publicOnly = false) {
     worklist.hidden = true;
-    profile = d.profile;
+    setup.open = false;
+    profile = d.profile || null;
     parcels = d.parcels;
     dirty = false;
     get('[data-profile]').hidden = false;
+    const inspector = panel.closest('.lm-inspector');
+    if (inspector) inspector.scrollTop = 0;
     const values = {
       ...defaults,
       ...profile?.data,
@@ -238,6 +255,11 @@ export function mountOwnerWorkspace({ viewer, openInspector }) {
         `Next action: ${values.nextAction || 'Not recorded'} · Follow-up: ${values.followupOn || 'Not scheduled'}`,
       ),
     );
+    editDisclosure.hidden = publicOnly;
+    overview.hidden = publicOnly;
+    get('[data-saved]').hidden = publicOnly;
+    get('[data-assessment-author]').hidden = publicOnly;
+    get('[data-history]').closest('details').hidden = publicOnly;
     editDisclosure.open = !profile;
     assessmentAuthor(values.transaction);
     get('[data-title]').textContent = values.name || 'New owner';
@@ -265,6 +287,13 @@ export function mountOwnerWorkspace({ viewer, openInspector }) {
         void viewer.flyTo(highlight, { duration: 1 });
       });
       row.append(button);
+      const detailButton = node('button', 'Open parcel facts');
+      detailButton.addEventListener('click', () =>
+        document.dispatchEvent(
+          new CustomEvent('landman:parcel', { detail: { id: p.id } }),
+        ),
+      );
+      row.append(detailButton);
       const url = p.source?.sourceUrl;
       if (url && /^https?:\/\//.test(url)) {
         const link = node(
@@ -302,7 +331,9 @@ export function mountOwnerWorkspace({ viewer, openInspector }) {
       history.append(detail);
     }
     message(
-      'Owner profile ready. Relationship records are excluded from standard route exports.',
+      publicOnly
+        ? 'Public appraisal summary. Private relationship notes require an assigned project.'
+        : 'Owner profile ready. Relationship records are excluded from standard route exports.',
     );
   }
   function assessmentAuthor(transaction) {
@@ -317,17 +348,23 @@ export function mountOwnerWorkspace({ viewer, openInspector }) {
     const intent = ++sequence;
     get('[data-save]').disabled = true;
     try {
-      await initialize();
       context = next;
       highlight.entities.removeAll();
       get('[data-profile]').hidden = true;
+      worklist.hidden = true;
       get('[data-matches]').replaceChildren();
-      message('Loading owner profile…');
-      const d = await api('owner-profile-query', {
-        project,
+      message('Loading public ownership…');
+      const params = {
         subject: next.subject,
         ...(next.parcels?.length ? { parcels: next.parcels.join(',') } : {}),
-      });
+      };
+      if (!next.subject.startsWith('manual:')) {
+        const d = await api('public-owner-query', params);
+        if (disposed || intent !== sequence) return;
+        render(d, true);
+      }
+      if (!(await initialize())) return;
+      const d = await api('owner-profile-query', { project, ...params });
       if (disposed || intent !== sequence) return;
       render(d);
     } catch (e) {
@@ -341,9 +378,10 @@ export function mountOwnerWorkspace({ viewer, openInspector }) {
     if (!mayLeave()) return;
     loading = true;
     try {
-      await initialize();
+      if (!(await initialize())) return;
       get('[data-profile]').hidden = true;
       worklist.hidden = false;
+      setup.open = true;
       highlight.entities.removeAll();
       const d = await api(
         'owner-directory?' +
@@ -499,11 +537,11 @@ export function mountOwnerWorkspace({ viewer, openInspector }) {
     if (!mayLeave()) return;
     loading = true;
     try {
-      await initialize();
       const d = await api(
         'owners?' + new URLSearchParams({ q: get('[data-query]').value }),
       );
       get('[data-profile]').hidden = true;
+      worklist.hidden = true;
       const list = get('[data-matches]');
       list.replaceChildren();
       for (const o of d.owners.filter(
@@ -517,7 +555,11 @@ export function mountOwnerWorkspace({ viewer, openInspector }) {
         );
         list.append(b);
       }
-      message('Select an owner to open their profile. Up to 50 matches shown.');
+      message(
+        d.owners.length
+          ? 'Select a recorded owner to see public parcels. Up to 50 matches shown.'
+          : 'No recorded names match. Try fewer words or a spelling variant.',
+      );
     } catch (e) {
       message(e.message);
     } finally {

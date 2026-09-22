@@ -1,4 +1,5 @@
-import { ownerWorkspace } from './ownerWorkspace.js';
+import { parseInspection } from './inspection.js';
+import { ownerWorkspace, publicOwnerSummary } from './ownerWorkspace.js';
 import pg from 'pg';
 import { analyzeCorridors } from './pipeline.js';
 import { fetchInfrastructure } from './longhaulInfrastructure.js';
@@ -40,7 +41,10 @@ export function parseLandFilters(q) {
     ].includes(interest) ||
     !Array.isArray(owners) ||
     owners.length > 50 ||
-    owners.some((x) => typeof x !== 'string' || x.length > 300)
+    owners.some(
+      (x) =>
+        typeof x !== 'string' || x.length > 300 || x === 'OWNER NOT SUPPLIED',
+    )
   )
     throw Error('Invalid land filters');
   return [
@@ -151,7 +155,7 @@ export function landProxy({ pool: providedPool } = {}) {
     if (!/^\d{1,14}$/.test(id || '')) throw Error('Invalid parcel');
     const parcel = (
       await query(
-        `SELECT p.id,p.area_acres,p.basins,c.name AS county,s.metadata AS source,json_build_array(ST_XMin(p.geom),ST_YMin(p.geom),ST_XMax(p.geom),ST_YMax(p.geom)) AS bounds ${FROM} JOIN landman.land_snapshot s ON s.id=p.snapshot_id WHERE p.id=$1`,
+        `SELECT p.id,p.source_key,p.area_acres,p.basins,c.name AS county,s.metadata AS source,json_build_array(ST_XMin(p.geom),ST_YMin(p.geom),ST_XMax(p.geom),ST_YMax(p.geom)) AS bounds ${FROM} JOIN landman.land_snapshot s ON s.id=p.snapshot_id WHERE p.id=$1`,
         [id],
       )
     ).rows[0];
@@ -171,7 +175,26 @@ export function landProxy({ pool: providedPool } = {}) {
       ).rows,
     };
   }
+  async function inspectPoint(q) {
+    const [longitude, latitude] = parseInspection(q);
+    const rows = (
+      await query(
+        `SELECT p.id,p.source_key,p.area_acres,c.name AS county,s.metadata AS source,
+      (SELECT string_agg(DISTINCT a.raw_owner,' / ') FROM landman.land_account a WHERE a.parcel_id=p.id) AS owner
+      ${FROM} JOIN landman.land_snapshot s ON s.id=p.snapshot_id
+      WHERE cardinality(p.basins)>0 AND ST_Covers(p.geom,ST_SetSRID(ST_MakePoint($1,$2),4326)) ORDER BY p.id LIMIT 21`,
+        [longitude, latitude],
+      )
+    ).rows;
+    return {
+      parcels: rows.slice(0, 20),
+      truncated: rows.length > 20,
+      note: 'Containing appraisal polygons from imported counties. No match does not mean unowned land; mineral rights need recorded evidence.',
+    };
+  }
   async function write(path, body, actor) {
+    if (path === '/public-owner-query')
+      return publicOwnerSummary(query, new URLSearchParams(body));
     if (path === '/owner-projects') return workspace.createProject(body, actor);
     if (path === '/owner-profile-query')
       return workspace.get('/owner-profile', new URLSearchParams(body), actor);
@@ -186,7 +209,12 @@ export function landProxy({ pool: providedPool } = {}) {
         !Array.isArray(owners) ||
         !owners.length ||
         owners.length > 50 ||
-        owners.some((x) => typeof x !== 'string' || x.length > 300)
+        owners.some(
+          (x) =>
+            typeof x !== 'string' ||
+            x.length > 300 ||
+            x === 'OWNER NOT SUPPLIED',
+        )
       )
         throw Error('Invalid client portfolio');
       const client = await db().connect();
@@ -228,6 +256,7 @@ export function landProxy({ pool: providedPool } = {}) {
       if (
         typeof owner !== 'string' ||
         owner.length > 300 ||
+        owner === 'OWNER NOT SUPPLIED' ||
         !Array.isArray(roles) ||
         roles.length > 10 ||
         roles.some((r) => !LAND_ROLES.includes(r) || r === 'unclassified') ||
@@ -274,6 +303,8 @@ export function landProxy({ pool: providedPool } = {}) {
               200,
               await fetchInfrastructure(u.searchParams.get('bbox')),
             );
+          if (u.pathname === '/inspect')
+            return reply(200, await inspectPoint(u.searchParams));
           if (u.pathname === '/catalog') return reply(200, await metadata());
           if (u.pathname === '/owners')
             return reply(200, await owners(u.searchParams));
@@ -309,7 +340,9 @@ export function landProxy({ pool: providedPool } = {}) {
             Buffer.byteLength(raw) >
             (u.pathname === '/route-corridors'
               ? 300000
-              : u.pathname === '/owner-profile-query'
+              : ['/owner-profile-query', '/public-owner-query'].includes(
+                    u.pathname,
+                  )
                 ? 64000
                 : 16000)
           )

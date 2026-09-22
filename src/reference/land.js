@@ -1,3 +1,4 @@
+import { inspectorSections } from './inspectorSections.js';
 import * as Cesium from 'cesium';
 import { parcelTheme, themeLegend } from './landThemes.js';
 const ROLE_NAMES = {
@@ -223,6 +224,7 @@ export function createLandLayer() {
           ),
         );
       error = null;
+      panel.querySelector('[data-retry]').hidden = true;
       message(
         data.count
           ? 'Click a parcel for appraisal owners and evidence.'
@@ -238,7 +240,9 @@ export function createLandLayer() {
         panel.querySelector('[data-totals]').textContent =
           'Results unavailable.';
         viewer.scene.requestRender();
-        error = e.message;
+        error =
+          'Could not load parcels for this map area. Retry the parcel display; other land queries may still work.';
+        panel.querySelector('[data-retry]').hidden = false;
         message(error);
       }
     } finally {
@@ -286,9 +290,27 @@ export function createLandLayer() {
       b.addEventListener('click', () => {
         selectedOwners.delete(key);
         chips();
+        pendingFilters();
       });
       list.append(b);
     }
+  }
+  let sections;
+  function pendingFilters() {
+    panel.querySelector('[data-pending]').textContent =
+      'Filter changes not applied. Choose Apply filters.';
+  }
+  function chooseOwner(key, name) {
+    if (key === 'OWNER NOT SUPPLIED') return;
+    selectedOwners.set(key, name);
+    panel.querySelector('[data-mode]').value = 'owner';
+    panel.querySelector('[data-owner-tools]').hidden = false;
+    panel.querySelector('[data-client-tools]').hidden = true;
+    panel.querySelector('[data-class-tools]').hidden = true;
+    panel.querySelector('[data-owner-matches]').replaceChildren();
+    chips();
+    pendingFilters();
+    sections.settings.open = true;
   }
   async function searchOwners() {
     const input = panel.querySelector('[data-owner-search]').value.trim();
@@ -306,8 +328,7 @@ export function createLandLayer() {
           `${o.name} · ${o.parcels.toLocaleString()} parcels`,
         );
         b.addEventListener('click', () => {
-          selectedOwners.set(o.owner_key, o.name);
-          chips();
+          chooseOwner(o.owner_key, o.name);
         });
         const profile = node('button', 'Open profile · ' + o.name);
         profile.addEventListener('click', () =>
@@ -334,6 +355,7 @@ export function createLandLayer() {
         detail: { layerId: 'land-parcels', name: 'Land ownership' },
       }),
     );
+    sections.show('parcel:' + id);
     box.scrollIntoView({ block: 'start', behavior: 'smooth' });
     try {
       const data = await get('detail?' + new URLSearchParams({ id }));
@@ -349,7 +371,7 @@ export function createLandLayer() {
       zoom.addEventListener('click', () => fly(p.bounds));
       box.append(zoom);
       box.append(
-        node('h3', p.county),
+        node('h3', `${p.county} · parcel ${p.source_key || p.id}`),
         node(
           'p',
           `${Number(p.area_acres).toFixed(2)} geometric acres · ${p.basins.join(', ')}`,
@@ -404,12 +426,14 @@ export function createLandLayer() {
         card.append(profile);
         const add = node('button', 'Add this owner to selection');
         add.addEventListener('click', () => {
-          selectedOwners.set(a.owner_key, a.raw_owner);
-          chips();
+          chooseOwner(a.owner_key, a.raw_owner);
         });
-        card.append(add);
+        if (a.owner_key !== 'OWNER NOT SUPPLIED') card.append(add);
+        const raw = node('details');
+        raw.append(node('summary', 'Original appraisal fields'));
         for (const [k, v] of Object.entries(a.properties))
-          if (v != null && v !== '') card.append(node('p', `${k}: ${v}`));
+          if (v != null && v !== '') raw.append(node('p', `${k}: ${v}`));
+        card.append(raw);
         card.append(
           node(
             'p',
@@ -476,7 +500,7 @@ export function createLandLayer() {
           }
         });
         edit.append(select, note, save);
-        card.append(edit);
+        if (a.owner_key !== 'OWNER NOT SUPPLIED') card.append(edit);
         box.append(card);
       }
       box.append(node('h3', 'Mineral rights and other interests'));
@@ -544,12 +568,24 @@ export function createLandLayer() {
  <label><input data-candidates type="checkbox" checked>Include research name-match candidates</label><small>Candidate company roles are unverified name matches. Client portfolios contain only the appraisal names you explicitly add. Identical names may represent different parties; verify legal identity.</small>
  <label>Interest evidence<select data-interest><option value="appraisal">Appraisal-reported ownership</option><option value="surface">Documented surface interest</option><option value="mineral">Documented mineral interest</option><option value="leasehold">Documented leasehold</option><option value="easement">Documented easement</option><option value="option">Documented option</option></select></label>
  <div class="land-actions"><button data-apply>Apply filters</button><button data-fit>Fit results</button><button data-clear>Clear filters</button></div>
- <p data-status role="status"></p><p data-totals></p>
+ <p data-applied>Applied: all owners · both basins · appraisal ownership</p><p data-pending role="status"></p><button data-retry hidden>Retry parcel display</button><p data-status role="status"></p><p data-totals></p>
  <details><summary>Save selected owners as a client portfolio</summary><label>Shared client name<input data-client-name maxlength="100"></label><button data-save-client>Save / add selected owners</button><p>Saved on the server and shared with signed-in users. Existing client names add these owners without removing current members.</p></details>
  <details data-coverage></details><div data-detail></div><div data-results></div>`;
+    sections = inspectorSections(panel, [panel.querySelector('[data-detail]')]);
+    sections.show(null);
     document.body.append(panel);
     const on = (s, e, f) =>
       panel.querySelector(s).addEventListener(e, f, { signal: abort.signal });
+    on('[data-retry]', 'click', () => void refresh());
+    for (const selector of [
+      '[data-basin]',
+      '[data-mode]',
+      '[data-client]',
+      '[data-role]',
+      '[data-interest]',
+      '[data-candidates]',
+    ])
+      on(selector, 'change', pendingFilters);
     on('[data-theme]', 'change', (e) => {
       theme = e.target.value;
       void refresh();
@@ -586,8 +622,12 @@ export function createLandLayer() {
         candidates: String(panel.querySelector('[data-candidates]').checked),
         interest: panel.querySelector('[data-interest]').value,
       });
+      panel.querySelector('[data-pending]').textContent = '';
+      panel.querySelector('[data-applied]').textContent =
+        `Applied: ${mode === 'owner' ? [...selectedOwners.values()].join(' · ') : mode === 'class' ? ROLE_NAMES[filters.role] || 'All classes' : mode === 'client' ? panel.querySelector('[data-client]').selectedOptions[0].textContent : 'All owners'} · ${filters.basin} · ${filters.interest}`;
       detailSequence++;
       panel.querySelector('[data-detail]').replaceChildren();
+      sections.show(null);
       void refresh();
     });
     on('[data-fit]', 'click', () => fly(result?.summary.bounds));
@@ -615,7 +655,12 @@ export function createLandLayer() {
       panel.querySelector('[data-client-tools]').hidden = panel.querySelector(
         '[data-class-tools]',
       ).hidden = true;
+      panel.querySelector('[data-pending]').textContent = '';
+      panel.querySelector('[data-applied]').textContent =
+        'Applied: all owners · both basins · appraisal ownership';
+      panel.querySelector('[data-owner-matches]').replaceChildren();
       panel.querySelector('[data-detail]').replaceChildren();
+      sections.show(null);
       detailSequence++;
       void refresh();
     });
@@ -691,6 +736,9 @@ export function createLandLayer() {
     },
     update() {
       return true;
+    },
+    inspectId(id) {
+      return inspect(id);
     },
     flyTo() {
       fly(result?.summary.bounds || [-106.7, 29, -99, 36]);

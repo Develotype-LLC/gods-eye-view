@@ -399,6 +399,49 @@ export function mountLocationInvestigation({
           (card, d) => renderRecords(card, d, item),
         );
       }
+    if (dataManager.isEnabled('land-parcels'))
+      add(
+        'Land ownership at B',
+        () =>
+          json(
+            '/api/reference/land/inspect?' + new URLSearchParams(base),
+            signal,
+          ),
+        (card, d) => {
+          card.append(node('p', d.note));
+          if (!d.parcels.length)
+            card.append(
+              node(
+                'p',
+                'No containing parcel in imported coverage. Ownership is unknown here.',
+              ),
+            );
+          for (const p of d.parcels) {
+            card.append(
+              node('strong', p.owner || 'Owner unresolved'),
+              node(
+                'p',
+                `${p.county} · parcel ${p.source_key} · ${Number(p.area_acres).toFixed(1)} acres · contains B`,
+              ),
+            );
+            const button = node('button', 'Open parcel facts');
+            button.addEventListener('click', () => {
+              stop();
+              document.dispatchEvent(
+                new CustomEvent('landman:parcel', { detail: { id: p.id } }),
+              );
+            });
+            card.append(button);
+          }
+          if (d.truncated)
+            card.append(
+              node(
+                'p',
+                'First 20 containing parcels shown; overlapping source records need review.',
+              ),
+            );
+        },
+      );
     const unsupported = dataManager
       .getAll()
       .filter(
@@ -410,6 +453,7 @@ export function mountLocationInvestigation({
             'us-basins',
             'texas-wells',
             'reference-records',
+            'land-parcels',
           ].includes(l.id),
       );
     for (const layer of unsupported)

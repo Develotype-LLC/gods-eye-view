@@ -48,9 +48,9 @@ export function mountPipelinePlanner({ viewer, openInspector }) {
   panel.innerHTML = `<div class="pp-intro"><span class="pp-badge">PRODUCED WATER · PRELIMINARY</span><h3>LONG-Haul</h3><p>Plan produced-water corridors around infrastructure, crossings and land constraints.</p></div>
  <form data-form><fieldset><legend>1 · Set the route</legend><label>Source A · latitude, longitude<input data-a required placeholder="31.6783, -102.3688"></label><button type="button" data-pick="a">Pick source on map</button><label>Delivery B · latitude, longitude<input data-b required placeholder="31.7000, -102.3200"></label><button type="button" data-pick="b">Pick delivery on map</button><button type="button" data-stop>Stop picking</button><button type="button" data-example>Load Permian example</button><p data-points>Endpoints not set. Use map picks or coordinates.</p><label>Required waypoints · latitude, longitude, one per line<textarea data-waypoints rows="3" placeholder="Optional · visited in listed order"></textarea></label><button type="button" data-add-via>Add waypoint on map</button><button type="button" data-draw-exclusion>Draw exclusion area</button><button type="button" data-finish-exclusion hidden>Finish area</button><button type="button" data-undo-exclusion hidden>Undo vertex</button><p data-drawing role="status"></p><div data-exclusions></div></fieldset>
  <fieldset><legend>2 · Routing preferences</legend><label>Mapped pipeline corridors<select data-route="corridor"><option value="prefer">Prefer parallel corridors</option><option value="neutral">Neutral</option><option value="avoid">Discourage parallel corridors</option></select></label><label>Operator name contains · optional<input data-route="operator" placeholder="All mapped operators"></label><p>Operator filtering expresses a preference; it does not establish client ownership, permission, operating status or available capacity.</p><div class="pp-inputs"><label>Parallel-corridor discount · %<input data-route="discount" type="number" min="0" max="70" step="1" value="30" required></label><label>Highway crossing penalty · equivalent km<input data-route="majorRoad" type="number" min="0" max="100" step="0.1" value="5" required></label><label>Other road crossing · equivalent km<input data-route="road" type="number" min="0" max="100" step="0.1" value="0.5" required></label><label>Rail crossing · equivalent km<input data-route="rail" type="number" min="0" max="100" step="0.1" value="8" required></label><label>Waterway crossing · equivalent km<input data-route="water" type="number" min="0" max="100" step="0.1" value="3" required></label></div><p>These are route-search preferences, not dollar estimates. A 5 km penalty makes one crossing equivalent to 5 km of additional new route. Parallel means aligned within 100 m of a mapped pipeline.</p><label><input type="checkbox" data-show-context checked> Show routing infrastructure and study boundary</label></fieldset>
- <fieldset><legend>3 · Operating assumptions</legend><label>Produced-water operating scenario<select data-operating-preset>${OPERATING_PRESETS.map((p) => `<option value="${p.id}">${p.label}</option>`).join('')}<option value="custom">Custom assumptions</option></select></label><p data-operating-summary aria-live="polite"></p><p>Starting scenarios, not rated capacity or an engineered pipe selection. Flow targets and operating values are planning assumptions.</p><details data-operating-details><summary>View or customize assumptions</summary><div class="pp-inputs">${fields.map(([id, label, min, max, step]) => `<label>${label}<input data-input="${id}" type="number" min="${min}" max="${max}" step="${step}" value="${OPERATING_PRESETS[0].inputs[id]}" required></label>`).join('')}</div><p>HDPE IPS DR11 dimensions use published average inside diameters. Confirm fluid compatibility, temperature, pressure, surge and pump stations for the project.</p><a href="https://www.cpchem.com/sites/default/files/2022-03/PP%20501%20Driscoplex%204000%204100%20Water%20Pipe%20Brochure.pdf" target="_blank" rel="noopener">Pipe dimension reference · Table 2</a></details></fieldset>
+ <fieldset><legend>3 · Operating assumptions</legend><label>Produced-water operating scenario<select data-operating-preset>${OPERATING_PRESETS.map((p) => `<option value="${p.id}">${p.label}</option>`).join('')}<option value="custom">Custom assumptions</option></select></label><p data-operating-summary aria-live="polite"></p><p>Single-pipe screening only; this does not size parallel pipes. Starting scenarios, not rated capacity or an engineered pipe selection. Flow targets and operating values are planning assumptions.</p><details data-operating-details><summary>View or customize assumptions</summary><div class="pp-inputs">${fields.map(([id, label, min, max, step]) => `<label>${label}<input data-input="${id}" type="number" min="${min}" max="${max}" step="${step}" value="${OPERATING_PRESETS[0].inputs[id]}" required></label>`).join('')}</div><p>HDPE IPS DR11 dimensions use published average inside diameters. Confirm fluid compatibility, temperature, pressure, surge and pump stations for the project.</p><a href="https://www.cpchem.com/sites/default/files/2022-03/PP%20501%20Driscoplex%204000%204100%20Water%20Pipe%20Brochure.pdf" target="_blank" rel="noopener">Pipe dimension reference · Table 2</a></details></fieldset>
  <fieldset><legend>4 · Compare alternatives</legend><label>Balance: owner-name priority <output data-weight-label>50%</output><input data-input="weight" type="range" min="0" max="100" value="50"></label><div class="pp-scale"><span>Pumping cost</span><span>Fewer owner names</span></div><p>Relative ranking among these candidates. No global optimum, surveyed route, crossing clearance or secured ROW is implied.</p><button class="pp-primary" data-compare>Find route alternatives</button><button type="button" data-cancel hidden>Cancel analysis</button></fieldset></form>
- <p data-status role="status" aria-live="polite">Ready. Set endpoints, then add any required waypoints or exclusion areas. Interactive study chain: 50 m–250 km; large or dense source inventories may require a smaller study.</p><div class="pp-actions"><button data-save>Save draft here</button><button data-load>Load saved draft</button><button data-export disabled>Export selected route</button><button data-clear>Clear route</button></div><small>Drafts stay in this browser. Export a GeoJSON file to share a candidate and its assumptions.</small>
+ <p data-status role="status" aria-live="polite">Ready. Set endpoints, then add any required waypoints or exclusion areas. Interactive study chain: 50 m–250 km; large or dense source inventories may require a smaller study.</p><div class="pp-actions"><button data-save>Save inputs on this device</button><button data-load>Load saved draft</button><button data-export disabled>Export candidate GeoJSON</button><button data-clear>Clear route</button></div><small>Drafts stay in this browser. Export a GeoJSON file to share a candidate and its assumptions.</small>
  <div data-results></div><div data-detail></div><details><summary>How estimates work and what is missing</summary><p>Single-phase, steady produced-water screening. Darcy–Weisbach friction with Colebrook turbulent friction (64/Re for laminar flow); hydraulic power divided by combined pump/motor efficiency. Source pressure is assumed to be 0 psi gauge. Head includes outlet pressure and sampled high points without energy recovery. Pipe diameter is inside diameter.</p><p>Terrain: Re:Earth modelled ellipsoidal heights sampled along every route segment, with spacing and progress shown. Between-sample crests, burial depth, fittings, gas, solids, transients, pump curves, pressure ratings and station spacing are not modelled. Annual cost is pumping electricity only; construction, easements and maintenance are excluded.</p><p>TxGIO appraisal owner names may represent different parties or aliases. Names are not a count of contracts. Unknown owner names and unmapped portions remain explicit. Routing uses a finite grid search with mapped RRC pipeline proximity and OSM road, rail and waterway crossing penalties. Drawn exclusions are hard constraints. Routes are searched for distance, infrastructure balance and stronger crossing avoidance, then evaluated for pumping and owners. Terrain and ownership do not yet guide the path search itself. Wetlands, permits, subsurface utilities and engineering clearances are not evaluated. Missing source inventories remain explicit.</p><a href="https://www.energy.gov/ehss/articles/doe-hdbk-10123-92" target="_blank" rel="noopener">DOE fluid-flow method reference</a></details>`;
   // Keep existing calculation controls, but reveal them in task order.
   const steps = el('nav');
@@ -86,19 +86,19 @@ export function mountPipelinePlanner({ viewer, openInspector }) {
     .querySelector('[data-input="weight"]')
     .closest('fieldset');
   const compareControls = el('fieldset');
-  compareControls.append(el('legend', 'Rank these alternatives'));
+  compareControls.append(el('legend', 'Compare priorities'));
   for (const node of [...ranking.children])
     if (!node.matches('legend,button')) compareControls.append(node);
   compareControls.querySelector('label').firstChild.textContent =
     'Recorded owner-name priority ';
   compareControls.querySelector('p').textContent =
-    'Reranks these generated alternatives by pumping cost and recorded owner names. This does not change their paths. Unresolved parcels and missing coverage remain separate.';
+    'Highlights the best eligible alternative for your priorities; table order and route paths stay fixed. Manual selection remains yours.';
   ranking.querySelector('legend').textContent = 'Find alternatives';
-  compare.append(compareControls, panel.querySelector('[data-results]'));
+  compare.append(panel.querySelector('[data-results]'), compareControls);
   const reviewButton = el('button', 'Review selected route’s land →');
   reviewButton.type = 'button';
   reviewButton.addEventListener('click', () => setStage('land'));
-  compare.append(reviewButton);
+  compareControls.before(reviewButton);
   landReview.append(panel.querySelector('[data-detail]'));
   setup.after(compare, landReview);
   const preferencesField = form
@@ -158,6 +158,7 @@ export function mountPipelinePlanner({ viewer, openInspector }) {
   }
   function stop() {
     picking = null;
+    panel.querySelector('[data-drawing]').textContent = '';
     if (document.body.dataset.pipelinePicking) {
       delete document.body.dataset.pipelinePicking;
       if (document.body.dataset.locationPicking === 'pipeline')
@@ -627,29 +628,38 @@ export function mountPipelinePlanner({ viewer, openInspector }) {
     const box = panel.querySelector('[data-results]');
     box.replaceChildren();
     const ranking = rankRoutes(routes, inputs.weight);
-    box.append(el('h3', 'LONG-Haul alternatives'));
+    const method = el('details');
+    method.append(el('summary', 'Sources, definitions & calculation details'));
+    box.append(el('h3', 'Compare route alternatives'));
+    const canRank =
+      Boolean(ranking.balanced) &&
+      infrastructure?.sources.every((s) => s.status === 'available');
+    panel.querySelector('[data-input="weight"]').disabled = !canRank;
+    compareControls.querySelector('p').textContent = canRank
+      ? 'Highlights the best eligible alternative for your priorities; table order and paths stay fixed. Your selected candidate stays selected.'
+      : 'Ranking unavailable: candidates need complete parcel coverage, no unresolved owners, terrain estimates and available infrastructure. Compare the facts and select a candidate manually.';
     if (infrastructure) {
-      box.append(
+      method.append(
         el(
           'p',
           `Search grid: ${routingRun.resolutionM} m · purple: pipelines · gold: roads · orange: rail · blue: waterways. Context display capped at 2,000 features; analysis uses ${infrastructure.features.length}.`,
         ),
       );
       for (const s of infrastructure.sources)
-        box.append(
+        method.append(
           el(
             'p',
             `${s.name}: ${s.status} · retrieved ${s.at.slice(0, 10)}${s.note ? ' · ' + s.note : ''}`,
           ),
         );
       if (infrastructure.sources.some((s) => s.status !== 'available'))
-        box.append(
+        method.append(
           el(
             'strong',
             'Incomplete infrastructure inventory: these alternatives cannot establish the fewest crossings or best corridor.',
           ),
         );
-      box.append(
+      method.append(
         el(
           'p',
           'Alternatives may coincide when the available data and preferences favor the same path. Ownership and pumping are evaluated after routing; they are not yet path-search costs.',
@@ -660,21 +670,28 @@ export function mountPipelinePlanner({ viewer, openInspector }) {
       !ranking.balanced ||
       infrastructure?.sources.some((s) => s.status !== 'available')
     )
-      box.append(
+      method.append(
         el(
           'p',
           'No automatic recommendation: available infrastructure inventories, full mapped parcel coverage, known appraisal names and complete terrain are required. You can inspect every candidate below.',
         ),
       );
-    box.append(
+    method.append(
       el(
         'p',
         'Known names: distinct recorded appraisal names, not verified legal parties or contracts. Parcels: corridor intersections. Unresolved: missing owner names, including partially named parcels. Mapped: centerline covered by imported parcels.',
       ),
     );
+    if (!canRank)
+      box.append(
+        el(
+          'p',
+          'Coverage is incomplete. No automatic recommendation; unresolved land remains in the comparison.',
+        ),
+      );
     const table = el('table');
     table.innerHTML =
-      '<thead><tr><th>Candidate</th><th>mi</th><th>Known names</th><th>Parcels</th><th>Unresolved</th><th>Pumping / yr</th><th>Mapped</th></tr></thead>';
+      '<thead><tr><th>Candidate</th><th>mi</th><th>Known names</th><th>Parcels</th><th>Unresolved</th><th>Electricity / year</th><th>Mapped</th></tr></thead>';
     const tbody = el('tbody');
     for (const r of routes) {
       const tr = el('tr');
@@ -748,7 +765,7 @@ export function mountPipelinePlanner({ viewer, openInspector }) {
     const tableScroll = el('div');
     tableScroll.className = 'pp-table-scroll';
     tableScroll.append(table);
-    box.append(tableScroll);
+    box.append(tableScroll, method);
     draw();
     renderDetail();
     panel.querySelector('[data-export]').disabled = !selected;
@@ -845,6 +862,9 @@ export function mountPipelinePlanner({ viewer, openInspector }) {
           'Pumping estimate unavailable: terrain observations are incomplete. Missing heights are not treated as zero.',
         ),
       );
+    const engineering = el('details');
+    engineering.append(el('summary', 'Hydraulics, crossings & terrain'));
+    for (const child of [...box.children].slice(1)) engineering.append(child);
     box.append(
       el(
         'p',
@@ -918,7 +938,7 @@ export function mountPipelinePlanner({ viewer, openInspector }) {
       a.rel = 'noopener';
       sources.append(a);
     }
-    box.append(sources);
+    box.append(engineering, sources);
   }
   function profile(box, h) {
     const ns = 'http://www.w3.org/2000/svg',
@@ -1160,6 +1180,13 @@ export function mountPipelinePlanner({ viewer, openInspector }) {
     a.click();
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
+  document.addEventListener(
+    'keydown',
+    (e) => {
+      if (e.key === 'Escape') stop();
+    },
+    { signal: lifetime.signal },
+  );
   setStage('setup');
   const picker = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
   picker.setInputAction((event) => {

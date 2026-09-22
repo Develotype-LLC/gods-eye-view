@@ -1,3 +1,5 @@
+import { inspectorSections } from './inspectorSections.js';
+import { etSelection, readableFacts } from './featureFacts.js';
 import * as Cesium from 'cesium';
 import { REFERENCE_COLORS } from './records.js';
 const node = (tag, text) => {
@@ -26,6 +28,10 @@ export function mountReferenceRecordsPanel({ viewer, dataManager, layer }) {
  <p data-status></p><p data-note></p><div data-map-controls><button data-fit>Zoom to coverage</button><label data-period-label>Reporting period<select data-period></select></label><label data-measurement-label>Measurement<select data-measurement><option value="ET">Actual ET · mm/month</option><option value="ETo">Reference ETo · mm/month</option></select></label><p data-et-legend>ET / ETo: pale blue 0 → dark blue 300 mm/month (capped). Gray = no observation; zero is a measured value.</p></div>
  <p data-view role="status"></p><form data-search><label>RRC record type<select data-kind><option value="">All API-linked records</option></select></label><label>Texas API-8<input data-api placeholder="10300256" pattern="[0-9]{8}"></label><label>Or source lease / gas-well / operator ID<input data-key placeholder="Preserve source leading zeros"></label><button>Search downloaded RRC records</button></form>
  <div data-detail></div><footer><small>Source snapshots • click a marker for records; click clusters to zoom.</small></footer>`;
+  const sections = inspectorSections(panel, [
+    panel.querySelector('[data-detail]'),
+  ]);
+  sections.show(null);
   document.body.append(panel);
   const abort = new AbortController(),
     on = (selector, event, fn) =>
@@ -70,7 +76,12 @@ export function mountReferenceRecordsPanel({ viewer, dataManager, layer }) {
       key: panel.querySelector('[data-key]').value.trim(),
     });
   });
-  let catalogRef, lastSelected, lastDetail, lastArchive;
+  let catalogRef,
+    lastSelected,
+    lastDetail,
+    lastArchive,
+    lastPeriod,
+    lastMeasurement;
   function sync() {
     const s = layer.getState();
     panel.hidden = !s.enabled;
@@ -150,11 +161,20 @@ export function mountReferenceRecordsPanel({ viewer, dataManager, layer }) {
         : result
           ? `${result.count.toLocaleString()} in view · ${hint}`
           : '');
-    if (lastDetail === s.detail && lastArchive === s.archive) return;
+    if (
+      lastDetail === s.detail &&
+      lastArchive === s.archive &&
+      lastPeriod === s.period &&
+      lastMeasurement === s.measurement
+    )
+      return;
+    lastPeriod = s.period;
+    lastMeasurement = s.measurement;
     lastDetail = s.detail;
     lastArchive = s.archive;
     const box = panel.querySelector('[data-detail]');
     box.replaceChildren();
+    sections.show(s.detail || s.archive ? s.detail?.key || 'records' : null);
     if (s.detail) {
       const d = s.detail;
       if (d.loading) {
@@ -165,28 +185,144 @@ export function mountReferenceRecordsPanel({ viewer, dataManager, layer }) {
         box.append(node('p', d.error));
         return;
       }
+      box.append(node('h3', d.feature?.name || 'Record unavailable'));
+      if (d.dataset === 'openet') {
+        const selected = etSelection(
+          d.observations || [],
+          s.period,
+          s.measurement,
+        );
+        box.append(node('p', `Field ${d.key} · OpenET historical sample`));
+        const measure = s.measurement === 'ETo' ? 'reference ETo' : 'actual ET';
+        const headline = node(
+          'strong',
+          !s.period
+            ? 'Choose a reporting month to inspect its map value'
+            : selected.value === null
+              ? `No observation · ${measure} · ${s.period}`
+              : `${selected.value.toFixed(1)} mm ${measure} · ${s.period}`,
+        );
+        headline.className = 'lm-key-fact';
+        box.append(headline);
+        const controls = node('div');
+        controls.className = 'lm-fact-controls';
+        for (const [labelText, current, choices, change] of [
+          [
+            'Selected month',
+            s.period,
+            (s.metadata.find((m) => m.id === 'openet')?.periods || []).map(
+              (p) => [p, p],
+            ),
+            (v) => layer.setPeriod(v),
+          ],
+          [
+            'Selected measure',
+            s.measurement,
+            [
+              ['ET', 'Actual ET'],
+              ['ETo', 'Reference ETo'],
+            ],
+            (v) => layer.setMeasurement(v),
+          ],
+        ]) {
+          const label = node('label', labelText),
+            select = node('select');
+          if (labelText === 'Selected month')
+            select.append(new Option('Choose month', ''));
+          for (const [value, text] of choices)
+            select.append(new Option(text, value));
+          select.value = current;
+          select.addEventListener('change', () => change(select.value));
+          label.append(select);
+          controls.append(label);
+        }
+        box.append(controls);
+        const dl = node('dl');
+        dl.className = 'record-properties';
+        for (const [label, value] of readableFacts(d.feature?.properties))
+          dl.append(node('dt', label), node('dd', value));
+        box.append(dl);
+        const history = node('details');
+        history.open = true;
+        history.append(
+          node('summary', `${measure} monthly history · mm/month`),
+        );
+        const table = node('table');
+        table.className = 'lm-history-table';
+        const head = node('tr');
+        head.append(
+          node('th', 'Month'),
+          node('th', 'mm/month'),
+          node('th', '0–300 mm scale'),
+        );
+        table.append(head);
+        for (const row of selected.history) {
+          const tr = node('tr');
+          if (row.period === s.period) tr.className = 'lm-current-observation';
+          const value = row.value == null ? null : Number(row.value);
+          tr.append(
+            node('td', row.period),
+            node('td', Number.isFinite(value) ? value.toFixed(1) : 'Missing'),
+          );
+          const td = node('td');
+          if (Number.isFinite(value)) {
+            const meter = node('meter');
+            meter.min = 0;
+            meter.max = 300;
+            meter.value = value;
+            meter.setAttribute('aria-label', `${row.period}: ${value} mm`);
+            td.append(meter);
+          }
+          tr.append(td);
+          table.append(tr);
+        }
+        history.append(table);
+        box.append(history);
+      } else {
+        const dl = node('dl');
+        dl.className = 'record-properties';
+        for (const [label, value] of readableFacts(d.feature?.properties))
+          dl.append(node('dt', label), node('dd', value));
+        box.append(
+          node(
+            'p',
+            `Source record ${d.key}${s.period ? ' · map period ' + s.period : ''}`,
+          ),
+          dl,
+        );
+        if (d.feature?.api8)
+          box.append(node('p', 'Texas API-8 · ' + d.feature.api8));
+      }
       box.append(
-        node('h3', d.feature?.name || 'Record unavailable'),
+        node(
+          'p',
+          d.note ||
+            'Source snapshot; see original records for evidence and coverage.',
+        ),
+      );
+      const raw = node('details');
+      raw.append(
+        node('summary', 'Source fields & original observations'),
         properties(d.feature?.properties),
       );
-      if (d.total) {
-        box.append(node('h4', `${d.total.toLocaleString()} linked records`));
-        for (const r of d.observations) {
-          const entry = node('details');
-          entry.append(
-            node('summary', [r.period, r.kind].filter(Boolean).join(' · ')),
-            properties(r.raw),
-          );
-          box.append(entry);
-        }
+      for (const r of d.observations || []) {
+        const entry = node('details');
+        entry.append(
+          node('summary', [r.period, r.kind].filter(Boolean).join(' · ')),
+          properties(r.raw),
+        );
+        raw.append(entry);
+      }
+      if (d.total)
         pagination(
-          box,
+          raw,
           d.offset,
           d.total,
           100,
           (offset) => void layer.loadDetail(d.dataset, d.key, offset),
         );
-      }
+      box.append(raw);
+      sections.show(d.key);
     }
     if (s.archive) {
       const a = s.archive;
